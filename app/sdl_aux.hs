@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SDL_Auxiliary 
+module SDL_Aux
     where
 
 import Control.Concurrent (threadDelay)
@@ -38,7 +38,6 @@ screenWidth, screenHeight :: CInt
 -- SDL.Rectangle :: Point V2 a -> V2 a -> SDL.Rectangle a
 -- P  :: f a -> Point f a
 -- V2 :: a -> a -> V2 a
-
 
 -- # SDL.Texture, (Width, Height)
 data Texture = Texture SDL.Texture (V2 CInt)
@@ -126,8 +125,8 @@ sdl_init = do
       let screen = Screen window renderer surface texture buffer screenHeight screenWidth
       return screen
 
-put_pixel :: Screen -> CInt -> CInt -> Vec3 Double -> IO Screen
-put_pixel screen x y color = do
+sdl_put_pixel :: Screen -> CInt -> CInt -> Vec3 Double -> IO Screen
+sdl_put_pixel screen x y color = do
                             let success = (x < 0 || x >= width screen || y < 0 || y >= height screen)
                             let r = GLM.clamp (255*((Vec.toList color) !! 0)) 0 255
                             let g = GLM.clamp (255*((Vec.toList color) !! 1)) 0 255
@@ -135,8 +134,8 @@ put_pixel screen x y color = do
                             let uscreen = Byte.unpack ( buffer screen)
                             let (xs,ys) = splitAt (fromIntegral $ toInteger (y*(width screen) + x)) uscreen
                             let insert =  ( (Bit.shift 24 128)) Bit..|.  (Bit.shift (toInteger $ floor r) 16) Bit..|.  (Bit.shift (toInteger $ floor g) 8) Bit..|. (toInteger $ floor b)
-                            let newbuffer = xs ++ ( fromInteger insert: ys)
-                            return screen
+                            let newscreen = screen {buffer = Byte.pack (xs ++ ( fromInteger insert: ys))}
+                            return newscreen
 
 main :: IO ()
 main = do
