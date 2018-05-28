@@ -48,10 +48,11 @@ data Screen = Screen  { window    :: SDL.Window,
 
 sdl_renderframe :: Screen -> IO ()
 sdl_renderframe t_screen = do
-                        t <- SDL.updateTexture (texture t_screen) Nothing (buffer t_screen) ((width t_screen) * 32)
-                        cl <- SDL.clear (renderer t_screen)
-                        co <- SDL.copy (renderer t_screen) (texture t_screen) Nothing Nothing
-                        pres <- SDL.present (renderer t_screen)
+                        t <- SDL.updateTexture (texture t_screen) Nothing (buffer t_screen) ((width t_screen))
+                        let screen' = t_screen {texture = t}
+                        cl <- SDL.clear (renderer screen')
+                        co <- SDL.copy (renderer screen') (texture screen') Nothing Nothing
+                        pres <- SDL.present (renderer screen')
                         return pres
 
 sdl_noquit :: IO () -> IO ()
