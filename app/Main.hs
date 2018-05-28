@@ -137,7 +137,7 @@ put_pixel screen x y color = do
                             let insert =  ( (Bit.shift 24 128)) Bit..|.  (Bit.shift (toInteger $ floor r) 16) Bit..|.  (Bit.shift (toInteger $ floor g) 8) Bit..|. (toInteger $ floor b)
                             let newbuffer = xs ++ ( fromInteger insert: ys)
                             return screen
-                            -- 
+
 main :: IO ()
 main = do
   -- window & surface & renderer
