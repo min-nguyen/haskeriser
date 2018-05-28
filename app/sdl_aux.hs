@@ -24,7 +24,7 @@ import Data.Text (Text)
 import Data.Typeable
 import Debug.Trace
 import SDL.Vect hiding (column)
-import qualified SDL as SDL 
+import qualified SDL as SDL
 import System.FilePath.Posix
 import System.Random
 import Control.Monad.State as ST
@@ -33,11 +33,6 @@ import qualified SDL.Raw.Types as Raw
 
 screenWidth, screenHeight :: CInt
 (screenWidth, screenHeight) = (800, 800)
-
--- SDL.Rectangle  = Point (x,y) -> (w,h) -> Rectangle Int
--- SDL.Rectangle :: Point V2 a -> V2 a -> SDL.Rectangle a
--- P  :: f a -> Point f a
--- V2 :: a -> a -> V2 a
 
 -- # SDL.Texture, (Width, Height)
 data Texture = Texture SDL.Texture (V2 CInt)
@@ -50,43 +45,6 @@ data Screen = Screen  { window    :: SDL.Window,
                         height    :: CInt,
                         width     :: CInt
                       }
-
-load_texture :: SDL.Renderer -> FilePath -> IO Texture
-load_texture r filePath = do
-  surface <- SDL.loadBMP filePath
-  size <- SDL.surfaceDimensions surface
-  let key = V4 0 maxBound maxBound maxBound
-  SDL.surfaceColorKey surface $= Just key
-  t <- SDL.createTextureFromSurface r surface
-  SDL.freeSurface surface
-  return (Texture t size)
-
--- Renderer-> Texture -> Point(drawX, drawY) -> Maybe (SDL.Rectangle CInt) -> IO ()
-render_texture :: SDL.Renderer -> Texture -> Point V2 CInt -> Maybe (SDL.Rectangle CInt) -> IO ()
-render_texture r (Texture t size) xy clip =
-  let dstSize = maybe size (\(SDL.Rectangle _ size') ->  size') clip
-  in SDL.copy r t clip (Just (SDL.Rectangle xy dstSize))
-
-
-game_over :: IO ()     
-game_over = do
-  putStrLn "GAME OVER"
-  game_over
-
-loop :: SDL.Renderer -> SDL.Texture -> SDL.Window -> IO ()
-loop rend text window  = do
-  poll <- SDL.pollEvents
-  -- If elapsed time > 100, update game
-  let quit = elem SDL.QuitEvent $ map SDL.eventPayload poll
-  SDL.rendererDrawColor rend $= V4 maxBound maxBound maxBound maxBound
-  SDL.clear rend
-
-  -- Draw sprite at current position
-  -- renderTexture rend text pv2 rect
-
-  SDL.present rend
-  unless quit $ loop rend text window
-
 
 sdl_renderframe :: Screen -> IO ()
 sdl_renderframe t_screen = do
@@ -113,9 +71,9 @@ sdl_init = do
       -- Create surface
       surface <- SDL.getWindowSurface window
       -- Fill window
-      let white =  V4 maxBound maxBound maxBound maxBound 
+      let white =  V4 maxBound maxBound maxBound maxBound
       SDL.surfaceFillRect surface Nothing white
-      renderer <- SDL.createRenderer window (-1) SDL.RendererConfig { 
+      renderer <- SDL.createRenderer window (-1) SDL.RendererConfig {
         SDL.rendererType = SDL.AcceleratedRenderer,
         SDL.rendererTargetTexture = False
       }
@@ -136,34 +94,3 @@ sdl_put_pixel screen x y color = do
                             let insert =  ( (Bit.shift 24 128)) Bit..|.  (Bit.shift (toInteger $ floor r) 16) Bit..|.  (Bit.shift (toInteger $ floor g) 8) Bit..|. (toInteger $ floor b)
                             let newscreen = screen {buffer = Byte.pack (xs ++ ( fromInteger insert: ys))}
                             return newscreen
-
-main :: IO ()
-main = do
-  -- window & surface & renderer
-  screen <- sdl_init
-
- 
-
-  SDL.destroyWindow $ window screen
-  SDL.quit
-
-  -- # loop renderer (True, (0,0)) window 
-  -- loop renderer text window
-
-
-  -- spriteSheetTexture <- load_texture renderer "../assets/SF.bmp"
-  -- let draw = renderTexture renderer
-  --     game = Game 0 False False
-  --     coin = ((500, 500), 2)
-  --     -- Load Snake
-  --     spriteSize = V2 cellWidth cellHeight
-  --     clip1 = SDL.Rectangle (P (V2 0 10)) spriteSize
-  --     clip2 = SDL.Rectangle (P (V2 50 10)) spriteSize
-  --     clip3 = SDL.Rectangle (P (V2 100 10)) spriteSize
-  --     clip4 = SDL.Rectangle (P (V2 150 10)) spriteSize
-  --     --Define character sprite loading functions
-  --     sprite = Sprite $ \state -> case state of 
-  --       _ -> (spriteSheetTexture, [clip1, clip2, clip3, clip4])
-
-
- 
