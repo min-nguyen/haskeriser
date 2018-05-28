@@ -1,27 +1,30 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+module SDL_Auxiliary 
+    where
+
 import Control.Concurrent (threadDelay)
 import Foreign.C.Types
-import Data.Word
-import Data.Vec hiding (map)
+import qualified Data.Word8 as Word
+import Data.Vec as Vec hiding (map)
 import Data.StateVar
 import Control.Applicative
 import Control.Exception
 import Control.Monad (forM, unless, void)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans
-import Data.Bits
-import qualified Graphics.Rendering.OpenGL as GLM 
+import GLM as GLM
+import qualified Data.Bits as Bit
 import Data.Data (Data)
 import Data.Foldable
-import qualified Data.ByteString as B
+import qualified Data.ByteString as Byte
 import Data.Maybe (isJust, fromMaybe)
 import Data.Monoid (First(..))
 import Data.Text (Text)
 import Data.Typeable
 import Debug.Trace
-import SDL.Vect
-import qualified SDL as SDL
+import SDL.Vect hiding (column)
+import qualified SDL as SDL 
 import System.FilePath.Posix
 import System.Random
 import Control.Monad.State as ST
@@ -44,12 +47,10 @@ data Screen = Screen  { window    :: SDL.Window,
                         renderer  :: SDL.Renderer,
                         surface   :: SDL.Surface,
                         texture   :: SDL.Texture,
-                        buffer    :: B.ByteString,
+                        buffer    :: Byte.ByteString,
                         height    :: CInt,
                         width     :: CInt
                       }
-               
-
 
 load_texture :: SDL.Renderer -> FilePath -> IO Texture
 load_texture r filePath = do
@@ -87,6 +88,7 @@ loop rend text window  = do
   SDL.present rend
   unless quit $ loop rend text window
 
+
 sdl_renderframe :: Screen -> IO ()
 sdl_renderframe t_screen = do
                         t <- SDL.updateTexture (texture t_screen) Nothing (buffer t_screen) ((width t_screen) * 32)
@@ -95,7 +97,7 @@ sdl_renderframe t_screen = do
                         pres <- SDL.present (renderer t_screen)
                         return pres
 
-sdl_noquit :: IO() -> IO ()
+sdl_noquit :: IO () -> IO ()
 sdl_noquit next = do
                   poll <- SDL.pollEvents
                   let quit = elem SDL.QuitEvent $ map SDL.eventPayload poll
@@ -120,16 +122,22 @@ sdl_init = do
       }
       texture <- SDL.createTexture renderer SDL.ARGB8888 SDL.TextureAccessStatic (V2 screenWidth screenHeight)
       SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
-      let buffer = B.pack $ [0 | j <- [0 .. screenHeight*screenWidth]]
+      let buffer = Byte.pack $ [0 | j <- [0 .. screenHeight*screenWidth]]
       let screen = Screen window renderer surface texture buffer screenHeight screenWidth
       return screen
 
-put_pixel :: Screen -> CInt -> CInt -> Vec3 Double -> IO Bool
+put_pixel :: Screen -> CInt -> CInt -> Vec3 Double -> IO Screen
 put_pixel screen x y color = do
                             let success = (x < 0 || x >= width screen || y < 0 || y >= height screen)
-                            r <- GLM.Clamp
-                            return True
-
+                            let r = GLM.clamp (255*((Vec.toList color) !! 0)) 0 255
+                            let g = GLM.clamp (255*((Vec.toList color) !! 1)) 0 255
+                            let b = GLM.clamp (255*((Vec.toList color) !! 2)) 0 255
+                            let uscreen = Byte.unpack ( buffer screen)
+                            let (xs,ys) = splitAt (fromIntegral $ toInteger (y*(width screen) + x)) uscreen
+                            let insert =  ( (Bit.shift 24 128)) Bit..|.  (Bit.shift (toInteger $ floor r) 16) Bit..|.  (Bit.shift (toInteger $ floor g) 8) Bit..|. (toInteger $ floor b)
+                            let newbuffer = xs ++ ( fromInteger insert: ys)
+                            return screen
+                            -- 
 main :: IO ()
 main = do
   -- window & surface & renderer
