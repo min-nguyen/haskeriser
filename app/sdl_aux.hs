@@ -11,6 +11,7 @@ import Data.Foldable hiding (elem)
 import Data.Maybe
 import Foreign.C.Types
 import SDL.Vect
+import Data.Word8
 import SDL (($=))
 import qualified SDL
 
@@ -28,6 +29,11 @@ data Screen = Screen  { window    :: SDL.Window,
                         center    :: Point V2 CInt
                       }
 
+
+sdl_put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
+sdl_put_pixel screen xy (V4 r g b a) = do
+    SDL.rendererDrawColor (renderer screen) $= V4 r g b a
+    SDL.drawPoint (renderer screen) (P xy)
 
 sdl_create_blank :: SDL.Renderer -> V2 CInt -> SDL.TextureAccess -> IO Texture
 sdl_create_blank r sz access = Texture <$> SDL.createTexture r SDL.RGBA8888 access sz <*> pure sz

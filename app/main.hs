@@ -17,7 +17,6 @@ import SDL_Aux
 
 
 
-
 loop :: (Screen -> IO ()) -> IO()
 loop draw_func = do
         screen <- sdl_init
@@ -42,39 +41,37 @@ loop draw_func = do
         SDL.destroyWindow (window screen)
         SDL.quit
 
-put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
-put_pixel screen xy (V4 r g b a) = do
-    SDL.rendererDrawColor (renderer screen) $= V4 r g b a
-    SDL.drawPoint (renderer screen) (P xy)
-
-test1 :: Screen -> IO ()
-test1 screen = do
-    let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
-    let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
-    sequence $ map (\(xy, color) -> put_pixel screen xy color) 
-                        (zip points colors)
-    return ()
-
-test2 :: Screen -> Int -> IO ()
-test2 (Screen window renderer targetTexture screenWidth screenHeight screenCenter) theta = do             
-
-    SDL.rendererDrawColor renderer $= V4 maxBound 0 0 maxBound
-    SDL.fillRect renderer (Just $ SDL.Rectangle (P $ V2 (screenWidth `div` 4) (screenHeight `div` 4))
-                                                        (V2 (screenWidth `div` 2) (screenHeight `div` 2)))
-
-    SDL.rendererDrawColor renderer $= V4 0 0 maxBound maxBound
-    SDL.drawRect renderer (Just (SDL.Rectangle (P $ V2 (screenWidth `div` 6) (screenHeight `div` 6))
-                                                    (V2 (screenWidth * 2 `div` 3) (screenHeight * 2 `div` 3))))
-
-    SDL.rendererDrawColor renderer $= V4 0 maxBound 0 maxBound
-    SDL.drawLine renderer (P (V2 0 (screenHeight `div` 2))) (P (V2 screenWidth (screenHeight `div` 2)))
-
-    SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
-    for_ [0, 4 .. screenHeight] $ \i ->
-        SDL.drawPoint renderer (P (V2 (screenWidth `div` 2) i))
-   
-    return ()    
-
 main :: IO ()
-main = do
-    loop test1
+main = return ()
+--  do
+--     loop test1
+
+
+
+-- test1 :: Screen -> IO ()
+-- test1 screen = do
+--     let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
+--     let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
+--     sequence $ map (\(xy, color) -> put_pixel screen xy color) 
+--                         (zip points colors)
+--     return ()
+
+-- test2 :: Screen -> Int -> IO ()
+-- test2 (Screen window renderer targetTexture screenWidth screenHeight screenCenter) theta = do             
+
+--     SDL.rendererDrawColor renderer $= V4 maxBound 0 0 maxBound
+--     SDL.fillRect renderer (Just $ SDL.Rectangle (P $ V2 (screenWidth `div` 4) (screenHeight `div` 4))
+--                                                         (V2 (screenWidth `div` 2) (screenHeight `div` 2)))
+
+--     SDL.rendererDrawColor renderer $= V4 0 0 maxBound maxBound
+--     SDL.drawRect renderer (Just (SDL.Rectangle (P $ V2 (screenWidth `div` 6) (screenHeight `div` 6))
+--                                                     (V2 (screenWidth * 2 `div` 3) (screenHeight * 2 `div` 3))))
+
+--     SDL.rendererDrawColor renderer $= V4 0 maxBound 0 maxBound
+--     SDL.drawLine renderer (P (V2 0 (screenHeight `div` 2))) (P (V2 screenWidth (screenHeight `div` 2)))
+
+--     SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
+--     for_ [0, 4 .. screenHeight] $ \i ->
+--         SDL.drawPoint renderer (P (V2 (screenWidth `div` 2) i))
+   
+--     return ()    
