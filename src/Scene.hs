@@ -16,7 +16,7 @@ import qualified GLM as GLM
 import SDL_Aux
 
 data Triangle = Triangle {  points  :: (V4 Double, V4 Double, V4 Double),
-                            color   :: V3 Double }
+                            color   :: V4 Word8 }
 
 data Color = Red | Blue | Yellow | Green | White | Purple 
 
@@ -24,14 +24,14 @@ data Camera = Camera {  position :: V4 Double}
 
 
 
-get_color :: Color -> V3 Double
+get_color :: Color -> V4 Word8 
 get_color color = case color of 
-    Red     -> V3 0.75 0.15 0.15 
-    Yellow  -> V3 0.75 0.75 0.15 
-    Green   -> V3 0.15 0.75 0.15 
-    Blue    -> V3 0.10 0.10 0.70
-    Purple  -> V3 0.75 0.15 0.75 
-    White   -> V3 0.75 0.75 0.75 
+    Red     -> V4 190  37  37  1
+    Yellow  -> V4 190 190  37  1
+    Green   -> V4 37  190  37  1
+    Blue    -> V4 25  25   180 1
+    Purple  -> V4 190 37   190 1
+    White   -> V4 190 190  190 1
 
 loadCamera :: Camera
 loadCamera = Camera (V4 0 0 (-0.5) 1)    

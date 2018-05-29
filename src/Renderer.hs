@@ -26,6 +26,7 @@ import Scene
 -- vertex_shader :: V4 Double -> Camera -> V2 Int
 -- vertex_shader point cam =
 
-draw_triangle :: Screen -> V3 Int -> Triangle -> IO ()
-draw_triangle screen origin triangle = do
-    sdl_draw_line screen
+-- draw_triangle :: Screen -> V3 Int -> Triangle -> IO ()
+-- draw_triangle screen origin triangle = do
+--     let (V4 v1a v1b v1c v1d, V4 v2a v2b v2c v2d, V4 v3a v3b v3c v3d) = points triangle
+--     sdl_draw_line screen v0 v1 (color triangle)
