@@ -17,7 +17,11 @@ import SDL_Aux
 import Scene
 
 
-draw :: Screen -> V3 Int -> [Triangle] -> IO ()
-draw screen origin triangles = do
-    
-    return ()
+-- draw :: Screen -> V3 Int -> [Triangle] -> IO ()
+-- draw screen origin triangles = do
+--     return ()
+
+
+--              # Point Pos             #Screen Pos
+-- vertex_shader :: V4 Double -> Camera -> V2 Int
+-- vertex_shader point cam =

@@ -20,6 +20,10 @@ data Triangle = Triangle {  points  :: (V4 Double, V4 Double, V4 Double),
 
 data Color = Red | Blue | Yellow | Green | White | Purple 
 
+data Camera = Camera {  position :: V4 Double}
+
+
+
 get_color :: Color -> V3 Double
 get_color color = case color of 
     Red     -> V3 0.75 0.15 0.15 
@@ -29,9 +33,11 @@ get_color color = case color of
     Purple  -> V3 0.75 0.15 0.75 
     White   -> V3 0.75 0.75 0.75 
 
+loadCamera :: Camera
+loadCamera = Camera (V4 0 0 -0.5 1)    
 
-loadScene :: [Triangle]
-loadScene = let 
+loadTriangles :: [Triangle]
+loadTriangles = let 
     vA = (V4 555  0  0  1)
     vB = (V4 0  0  0  1)
     vC = (V4 555  0  555  1)
