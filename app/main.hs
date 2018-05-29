@@ -7,6 +7,7 @@ import Prelude hiding (any, mapM_)
 import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)
 import Data.Maybe
+import Data.Word8
 import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
@@ -17,24 +18,45 @@ import SDL_Aux
 
 
 
-loop :: Screen -> SDL.Texture -> SDL.Window -> IO ()
-loop screen text window  = do
-  poll <- SDL.pollEvents
-  -- If elapsed time > 100, update game
-  let quit = elem SDL.QuitEvent $ map SDL.eventPayload poll
---   screen' <- testdraw screen 0 0 True
---   sdl_renderframe screen'
---   SDL.present (renderer screen)
-  unless quit $ loop screen text window
+loop :: (Screen -> IO ()) -> IO()
+loop draw_func = do
+        screen <- sdl_init
+        let loop' = do
+            -- Pre Draw
+            events <- map SDL.eventPayload <$> SDL.pollEvents
+            let quit = SDL.QuitEvent `elem` events
+            sdl_set_render_target (renderer screen) (Just $ texture screen)
+            SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
+            SDL.clear (renderer screen)
 
+            -- Draw
+            draw_func screen
+            
+            -- Post Draw
+            sdl_set_render_target (renderer screen) Nothing
+            sdl_render_texture (renderer screen) (texture screen) 0 Nothing (Just (fromIntegral 0)) (Just $ center screen) Nothing
+            SDL.present (renderer screen)
+            unless quit (loop')
 
+        loop' 
+        SDL.destroyWindow (window screen)
+        SDL.quit
 
-draw :: Screen -> Int -> IO ()
-draw (Screen window renderer targetTexture screenWidth screenHeight screenCenter) theta = do             
+put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
+put_pixel screen xy (V4 r g b a) = do
+    SDL.rendererDrawColor (renderer screen) $= V4 r g b a
+    SDL.drawPoint (renderer screen) (P xy)
 
+test1 :: Screen -> IO ()
+test1 screen = do
+    let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
+    let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
+    sequence $ map (\(xy, color) -> put_pixel screen xy color) 
+                        (zip points colors)
+    return ()
 
-    SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
-    SDL.clear renderer
+test2 :: Screen -> Int -> IO ()
+test2 (Screen window renderer targetTexture screenWidth screenHeight screenCenter) theta = do             
 
     SDL.rendererDrawColor renderer $= V4 maxBound 0 0 maxBound
     SDL.fillRect renderer (Just $ SDL.Rectangle (P $ V2 (screenWidth `div` 4) (screenHeight `div` 4))
@@ -50,28 +72,9 @@ draw (Screen window renderer targetTexture screenWidth screenHeight screenCenter
     SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
     for_ [0, 4 .. screenHeight] $ \i ->
         SDL.drawPoint renderer (P (V2 (screenWidth `div` 2) i))
-
    
     return ()    
 
 main :: IO ()
 main = do
-    -- window & surface & renderer
-    screen <- sdl_init
-    let screenCenter = P (V2 ((width screen) `div` 2) ((height screen) `div` 2))
-        loop theta = do
-            events <- map SDL.eventPayload <$> SDL.pollEvents
-            let quit = SDL.QuitEvent `elem` events
-            sdl_set_render_target (renderer screen) (Just $ texture screen)
-
-            draw screen theta
-
-            sdl_set_render_target (renderer screen) Nothing
-            sdl_render_texture (renderer screen) (texture screen) 0 Nothing (Just (fromIntegral theta)) (Just $ center screen) Nothing
-            SDL.present (renderer screen)
-            unless quit (loop (theta + 2 `mod` 360))
-    
-    loop (0 :: Int)
-
-    SDL.destroyWindow (window screen)
-    SDL.quit
+    loop test1
