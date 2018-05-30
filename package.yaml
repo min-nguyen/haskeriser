@@ -48,6 +48,7 @@ library:
   - word8
   - monads-tf
   - sdl2
+  - vector-space
 
 executables:
   keta-exe:
