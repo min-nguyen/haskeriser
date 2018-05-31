@@ -12,7 +12,8 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import qualified GLM as GLM
+import GLM as GLM
+import Scene
 import SDL_Aux
 
 loop :: (Screen -> IO ()) -> IO()
@@ -35,7 +36,8 @@ loop draw_func = do
 
 main :: IO ()
 main = do
-        loop test1
+    triangles <- loadTriangles
+    loop test1
 
 
 
