@@ -61,7 +61,11 @@ draw_triangle screen projected_vertices zbuffer triangle  = do
         zbuffer' = f zbuffer fillpoints
     
     return zbuffer'
-  
+
+
+
+
+    
 -- draw_triangle     
 
 -- draw_triangle :: Screen -> V3 Int -> Triangle -> IO ()

@@ -15,9 +15,10 @@ import qualified SDL
 import GLM as GLM
 import Scene
 import SDL_Aux
+import Renderer
 
-loop :: (Screen -> IO ()) -> IO()
-loop draw_func = do
+loop :: (Screen -> [Triangle] -> Camera -> IO()) -> [Triangle] -> Camera -> IO()
+loop draw_func triangles camera = do
         screen <- sdl_init
         let loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
@@ -25,7 +26,7 @@ loop draw_func = do
                         sdl_set_render_target (renderer screen) (Just $ texture screen)
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
-                        draw_func screen
+                        draw_func screen  triangles camera 
                         sdl_set_render_target (renderer screen) Nothing
                         sdl_render_texture (renderer screen) (texture screen) 0 Nothing (Just (fromIntegral 0)) (Just $ center screen) Nothing
                         SDL.present (renderer screen)
@@ -34,17 +35,32 @@ loop draw_func = do
         SDL.destroyWindow (window screen)
         SDL.quit
 
+draw_loop :: Screen -> [Triangle] -> Camera -> IO()
+draw_loop screen triangles camera = do
+    let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 10000
+        cam_matrix = cam_projection_matrix camera
+    let f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
+                                                                    let (va, vb, vc) = points x
+                                                                        v_a = (fromMatV3 $ cam_matrix * (toMatV4 va))
+                                                                        v_b = (fromMatV3 $ cam_matrix * (toMatV4 vb))
+                                                                        v_c = (fromMatV3 $ cam_matrix * (toMatV4 vc))
+                                                                    next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
+                                                                    f next_zbuff' xs 
+                                                             [] -> return ()
+    f zbuffer triangles
+             
 main :: IO ()
 main = do
     triangles <- loadTriangles
-    loop test1
+    camera <- loadCamera
+    loop draw_loop triangles camera
 
 
 
         -- main :: IO ()
         -- main =  do
         --     triangles <- loadTriangles
-        --     camera <- loadCamera
+        --     
 test1 :: Screen -> IO ()
 test1 screen = do
     let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]

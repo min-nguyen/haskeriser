@@ -8,6 +8,7 @@ import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
+import Data.Matrix
 -- import Foreign.qC.Types
 import SDL.Vect
 import SDL (($=))
@@ -20,9 +21,14 @@ data Triangle = Triangle {  points  :: (V4 Double, V4 Double, V4 Double),
 
 data Color = Red | Blue | Yellow | Green | White | Purple 
 
-data Camera = Camera {  position :: V4 Double}
+data Camera = Camera {  position :: V4 Double }
 
-
+cam_projection_matrix :: Camera -> Matrix Double
+cam_projection_matrix cam = fromList 2 2 [1, 0, 0, 0,
+                                          0, 1, 0, 0,
+                                          0, 0, 1, 0,
+                                          0, 0, -1/z, 1]
+                            where V4 x y z w = position cam
 
 get_color :: Color -> V4 Word8 
 get_color color = case color of 
@@ -33,8 +39,9 @@ get_color color = case color of
     Purple  -> V4 190 37   190 1
     White   -> V4 190 190  190 1
 
-loadCamera :: Camera
-loadCamera = Camera (V4 0 0 (-0.5) 1)    
+loadCamera :: IO Camera
+loadCamera = do
+    return $ Camera (V4 0 0 (-0.5) 1)    
 
 loadTriangles :: IO ([Triangle])
 loadTriangles = do

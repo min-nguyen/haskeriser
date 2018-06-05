@@ -33,6 +33,7 @@ dependencies:
 - monads-tf
 - lens
 - sdl2
+- matrix
 
 library:
   source-dirs: src
