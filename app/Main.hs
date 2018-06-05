@@ -8,6 +8,7 @@ import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
+import Data.Matrix
 import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
@@ -37,13 +38,14 @@ loop draw_func triangles camera = do
 
 draw_loop :: Screen -> [Triangle] -> Camera -> IO()
 draw_loop screen triangles camera = do
-    let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 10000
+    let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 0
         cam_matrix = cam_projection_matrix camera
-    let f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
+        f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
                                                                     let (va, vb, vc) = points x
-                                                                        v_a = (fromMatV3 $ cam_matrix * (toMatV4 va))
-                                                                        v_b = (fromMatV3 $ cam_matrix * (toMatV4 vb))
-                                                                        v_c = (fromMatV3 $ cam_matrix * (toMatV4 vc))
+                                                                    -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
+                                                                    let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
+                                                                        v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
+                                                                        v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
                                                                     next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
                                                                     f next_zbuff' xs 
                                                              [] -> return ()

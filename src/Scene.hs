@@ -23,8 +23,9 @@ data Color = Red | Blue | Yellow | Green | White | Purple
 
 data Camera = Camera {  position :: V4 Double }
 
+
 cam_projection_matrix :: Camera -> Matrix Double
-cam_projection_matrix cam = fromList 2 2 [1, 0, 0, 0,
+cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
                                           0, 1, 0, 0,
                                           0, 0, 1, 0,
                                           0, 0, -1/z, 1]
@@ -32,12 +33,17 @@ cam_projection_matrix cam = fromList 2 2 [1, 0, 0, 0,
 
 get_color :: Color -> V4 Word8 
 get_color color = case color of 
-    Red     -> V4 190  37  37  1
-    Yellow  -> V4 190 190  37  1
-    Green   -> V4 37  190  37  1
-    Blue    -> V4 25  25   180 1
-    Purple  -> V4 190 37   190 1
-    White   -> V4 190 190  190 1
+    Red     -> V4 190  37  37  255
+    Yellow  -> V4 190 190  37  255
+    Green   -> V4 37  190  37  255
+    Blue    -> V4 25  25   180 255
+    Purple  -> V4 190 37   190 255
+    White   -> V4 190 190  190 255
+
+scale_vec4 :: V4 Double -> V4 Double    
+scale_vec4 v4 =  let (V4 x y z w) = v4 * (2/555) - (V4 1 1 1 1)
+                 in (V4 (-x) (-y) z 1)
+
 
 loadCamera :: IO Camera
 loadCamera = do
@@ -45,15 +51,15 @@ loadCamera = do
 
 loadTriangles :: IO ([Triangle])
 loadTriangles = do
-    let vA = (V4 555  0  0  1)
-        vB = (V4 0  0  0  1)
-        vC = (V4 555  0  555  1)
-        vD = (V4 0  0  555  1)
-        vE = (V4 555  555  0  1)
-        vF = (V4 0  555  0  1)
-        vG = (V4 555  555  555  1)
-        vH = (V4 0  555  555  1)
-        tri_1   = Triangle (vC, vB, vA) (get_color Red)
+    let vA = scale_vec4 (V4 555  0  0  1)
+        vB = scale_vec4 (V4 0  0  0  1)
+        vC = scale_vec4 (V4 555  0  555  1)
+        vD = scale_vec4(V4 0  0  555  1)
+        vE = scale_vec4(V4 555  555  0  1)
+        vF = scale_vec4(V4 0  555  0  1)
+        vG = scale_vec4(V4 555  555  555  1)
+        vH = scale_vec4(V4 0  555  555  1)
+        tri_1   =  Triangle (vC, vB, vA) (get_color Red)
         tri_2   = Triangle (vC, vD, vB) (get_color Red)
         tri_3   = Triangle (vA, vE, vC) (get_color Blue)
         tri_4   = Triangle (vC, vE, vG) (get_color Blue)
@@ -63,14 +69,14 @@ loadTriangles = do
         tri_8   = Triangle (vF, vH, vG) (get_color Yellow)
         tri_9   = Triangle (vG, vD, vC) (get_color Green)
         tri_10  = Triangle (vG, vH, vD) (get_color Green)
-        qA = V4 290 0 114 1;
-        qB = V4 130 0  65 1;
-        qC = V4 240 0 272 1;
-        qD = V4  82 0 225 1;
-        qE = V4 290 165 114 1;
-        qF = V4 130 165  65 1;
-        qG = V4 240 165 272 1;
-        qH = V4  82 165 225 1;
+        qA = scale_vec4 $ V4 290 0 114 1;
+        qB = scale_vec4 $ V4 130 0  65 1;
+        qC = scale_vec4 $ V4 240 0 272 1;
+        qD = scale_vec4 $ V4  82 0 225 1;
+        qE = scale_vec4 $ V4 290 165 114 1;
+        qF = scale_vec4 $ V4 130 165  65 1;
+        qG = scale_vec4 $ V4 240 165 272 1;
+        qH = scale_vec4 $ V4  82 165 225 1;
         tri_11 = Triangle(qE, qB, qA) (get_color Red)
         tri_12 = Triangle(qE, qF, qB) (get_color Red)
         tri_13 = Triangle(qF, qD, qB) (get_color Red)

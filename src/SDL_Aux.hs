@@ -38,6 +38,7 @@ sdl_draw_line screen xy1 xy2 (V4 r g b a) = do
 sdl_put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
 sdl_put_pixel screen xy (V4 r g b a) = do
     SDL.rendererDrawColor (renderer screen) $= V4 r g b a
+    -- print $ "drawing" ++ (show xy)
     SDL.drawPoint (renderer screen) (P xy)
 
 sdl_create_blank :: SDL.Renderer -> V2 CInt -> SDL.TextureAccess -> IO Texture
@@ -70,7 +71,7 @@ sdl_init = do
 
   window <-
     SDL.createWindow
-      "SDL Tutorial"
+      "Haskerizer"
       SDL.defaultWindow {SDL.windowInitialSize = V2 screenWidth screenHeight}
   SDL.showWindow window
 
