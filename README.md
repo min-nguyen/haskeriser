@@ -1,1 +1,1 @@
-# Haskeizer
+# Haskerizer
