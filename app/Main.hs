@@ -13,11 +13,13 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import GLM as GLM
-import Scene
+import Matrix as Matrix
+import Triangle
 import SDL_Aux
 import Renderer
 import Model
+import Camera
+import TGA
 
 loop :: (Screen -> [Triangle] -> Camera -> IO()) -> [Triangle] -> Camera -> IO()
 loop draw_func triangles camera = do
@@ -41,8 +43,8 @@ loop draw_func triangles camera = do
              
 main :: IO ()
 main = do
-    load_model
-    -- triangles <- loadTriangles
+    read_tga "resources/african_head_diffuse.tga"
+    -- model <- load_model
     -- camera <- loadCamera
     -- loop draw_loop triangles camera
     return ()
@@ -55,23 +57,3 @@ test1 screen = do
     sequence $ map (\(xy, color) -> sdl_put_pixel screen xy color) 
                         (zip points colors)
     return ()
-
--- test2 :: Screen -> Int -> IO ()
--- test2 (Screen window renderer targetTexture screenWidth screenHeight screenCenter) theta = do             
-
---     SDL.rendererDrawColor renderer $= V4 maxBound 0 0 maxBound
---     SDL.fillRect renderer (Just $ SDL.Rectangle (P $ V2 (screenWidth `div` 4) (screenHeight `div` 4))
---                                                         (V2 (screenWidth `div` 2) (screenHeight `div` 2)))
-
---     SDL.rendererDrawColor renderer $= V4 0 0 maxBound maxBound
---     SDL.drawRect renderer (Just (SDL.Rectangle (P $ V2 (screenWidth `div` 6) (screenHeight `div` 6))
---                                                     (V2 (screenWidth * 2 `div` 3) (screenHeight * 2 `div` 3))))
-
---     SDL.rendererDrawColor renderer $= V4 0 maxBound 0 maxBound
---     SDL.drawLine renderer (P (V2 0 (screenHeight `div` 2))) (P (V2 screenWidth (screenHeight `div` 2)))
-
---     SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
---     for_ [0, 4 .. screenHeight] $ \i ->
---         SDL.drawPoint renderer (P (V2 (screenWidth `div` 2) i))
-   
---     return ()    

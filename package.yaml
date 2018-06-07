@@ -34,6 +34,8 @@ dependencies:
 - lens
 - sdl2
 - matrix
+- split
+- JuicyPixels
 
 library:
   source-dirs: src
@@ -51,7 +53,8 @@ library:
   - monads-tf
   - sdl2
   - vector-space
-
+  - codec
+ 
 executables:
   keta-exe:
     main:                Main.hs
@@ -73,6 +76,7 @@ executables:
     - transformers
     - monads-tf
     - sdl2
+    - codec
     - keta
 
 tests:

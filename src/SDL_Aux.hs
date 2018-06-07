@@ -26,6 +26,8 @@ data Screen = Screen  { window    :: SDL.Window,
                         texture   :: Texture,
                         height    :: CInt,
                         width     :: CInt,
+                        height_i  :: Int,
+                        width_i   :: Int,
                         center    :: Point V2 CInt
                       }
 
@@ -38,7 +40,6 @@ sdl_draw_line screen xy1 xy2 (V4 r g b a) = do
 sdl_put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
 sdl_put_pixel screen xy (V4 r g b a) = do
     SDL.rendererDrawColor (renderer screen) $= V4 r g b a
-    -- print $ "drawing" ++ (show xy)
     SDL.drawPoint (renderer screen) (P xy)
 
 sdl_create_blank :: SDL.Renderer -> V2 CInt -> SDL.TextureAccess -> IO Texture
@@ -88,7 +89,7 @@ sdl_init = do
 
   targetTexture <- sdl_create_blank renderer (V2 screenWidth screenHeight) SDL.TextureAccessTarget
   let screenCenter = P (V2 (screenWidth `div` 2) (screenHeight `div` 2))
-  return $ Screen window renderer targetTexture screenHeight screenWidth screenCenter
+  return $ Screen window renderer targetTexture screenHeight screenWidth (fromIntegral $ toInteger $ screenHeight) (fromIntegral $ toInteger $ screenWidth) screenCenter
 
 
 sdl_noquit :: IO () -> IO ()

@@ -14,9 +14,12 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import qualified GLM as GLM
+import Matrix as Matrix
 import SDL_Aux
-import Scene
+import Triangle
+import Model
+import Light
+import Camera
 import Control.Lens
 
 -- # Triangle Vertices v0 v1 v2 -> Queried Point p -> Barycentric Coordinates
@@ -32,23 +35,32 @@ replaceAt :: Double -> Int -> [Double] ->[Double]
 replaceAt newElement n array = take n array ++ [newElement] ++ drop (n + 1) array
 
 
--- draw_loop :: Screen -> [Triangle] -> Camera -> IO()
--- draw_loop screen triangles camera = do
---     let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 0
---         cam_mat = cam_projection_matrix camera
---         viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75
-        
-        
---         f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
---                                                                     let (va, vb, vc) = points x
---                                                                     -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
---                                                                     let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
---                                                                         v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
---                                                                         v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
---                                                                     next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
---                                                                     f next_zbuff' xs 
---                                                              [] -> return ()
---      f zbuffer triangles
+draw_loop :: Screen -> Model -> Light -> Camera -> IO()
+draw_loop screen model light camera = do
+    let zbuffer = replicate ((width_i screen)*(height_i screen)) 0
+        t_faces = faces model
+        t_verts = verts model
+        t_norms = norms model
+        t_uvs = uvs model
+        projection_mat = cam_projection_matrix camera
+        viewport_mat = viewport_matrix ((fromIntegral $ width_i screen)/8.0) ((fromIntegral $ height_i screen)/8.0) ((fromIntegral $ width_i screen)*0.75) ((fromIntegral $ height_i screen)*0.75)
+    
+    --------    
+    screen_world_coords <-  mapM (\ind -> do 
+                                    let face = model_face model ind 
+                                        v = model_vert model ind
+                                        screen_coord v = fromMatV3 (viewport_mat * projection_mat * (toMatV3 v)) 
+                                        screen_coords = screen_coord v 
+                                    return ((screen_coords, v) :: (V3 Double, V3 Double))) ([1, 2, 3] :: [Int])
+
+    let [v3_sa, v3_sb, v3_sc] = map (\(x,y) -> x) screen_world_coords
+        [v3_wa, v3_wb, v3_wc] = map (\(x,y) -> y) screen_world_coords
+        screen_coords = V3 v3_sa v3_sb v3_sc
+        world_coords  = V3 v3_wa v3_wb v3_wc
+        norm = norm_V3 $ or_V3  (v3_wc - v3_wa) (v3_wb - v3_wc)
+        light_intensity = norm * (direction light)
+        -- if light_intensity > 0 then let uv = V3 
+    return ()
 
 -- # Screen -> Projected 2D Triangle Vertices v0 v1 v2 -> Z-Buffer  -> Triangle  -> Updated Z-Buffer                     
 draw_triangle :: Screen ->  (V4 Double, V4 Double, V4 Double) -> [Double] -> Triangle -> IO [Double]
@@ -83,3 +95,18 @@ draw_triangle screen projected_vertices zbuffer triangle  = do
         zbuffer' = f zbuffer fillpoints
     
     return zbuffer'
+
+       
+    -- cam_mat = cam_projection_matrix camera
+    -- viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75
+    
+    
+    -- f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
+    --                                                             let (va, vb, vc) = points x
+    --                                                             -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
+    --                                                             let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
+    --                                                                 v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
+    --                                                                 v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
+    --                                                             next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
+    --                                                             f next_zbuff' xs 
+    --                                                      [] -> return ()
