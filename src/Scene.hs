@@ -31,6 +31,11 @@ cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
                                           0, 0, -1/z, 1]
                             where V4 x y z w = position cam
 
+viewport_matrix :: Double -> Double -> Double -> Double -> Matrix Double
+viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          0,
+                                        0,       h/2.0,     0,          0,
+                                        0,       0,         255/2.0,    0,
+                                        x+y/2.0, y+h/2.0,   255/2.0,    1]
 get_color :: Color -> V4 Word8 
 get_color color = case color of 
     Red     -> V4 190  37  37  255

@@ -17,6 +17,7 @@ import GLM as GLM
 import Scene
 import SDL_Aux
 import Renderer
+import Model
 
 loop :: (Screen -> [Triangle] -> Camera -> IO()) -> [Triangle] -> Camera -> IO()
 loop draw_func triangles camera = do
@@ -36,33 +37,17 @@ loop draw_func triangles camera = do
         SDL.destroyWindow (window screen)
         SDL.quit
 
-draw_loop :: Screen -> [Triangle] -> Camera -> IO()
-draw_loop screen triangles camera = do
-    let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 0
-        cam_matrix = cam_projection_matrix camera
-        f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
-                                                                    let (va, vb, vc) = points x
-                                                                    -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
-                                                                    let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
-                                                                        v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
-                                                                        v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
-                                                                    next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
-                                                                    f next_zbuff' xs 
-                                                             [] -> return ()
-    f zbuffer triangles
+
              
 main :: IO ()
 main = do
-    triangles <- loadTriangles
-    camera <- loadCamera
-    loop draw_loop triangles camera
+    load_model
+    -- triangles <- loadTriangles
+    -- camera <- loadCamera
+    -- loop draw_loop triangles camera
+    return ()
 
 
-
-        -- main :: IO ()
-        -- main =  do
-        --     triangles <- loadTriangles
-        --     
 test1 :: Screen -> IO ()
 test1 screen = do
     let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]

@@ -32,6 +32,24 @@ replaceAt :: Double -> Int -> [Double] ->[Double]
 replaceAt newElement n array = take n array ++ [newElement] ++ drop (n + 1) array
 
 
+-- draw_loop :: Screen -> [Triangle] -> Camera -> IO()
+-- draw_loop screen triangles camera = do
+--     let zbuffer = replicate ((fromIntegral $ toInteger $ width screen)*(fromIntegral $ toInteger $ height screen)) 0
+--         cam_mat = cam_projection_matrix camera
+--         viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75
+        
+        
+--         f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
+--                                                                     let (va, vb, vc) = points x
+--                                                                     -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
+--                                                                     let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
+--                                                                         v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
+--                                                                         v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
+--                                                                     next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
+--                                                                     f next_zbuff' xs 
+--                                                              [] -> return ()
+--      f zbuffer triangles
+
 -- # Screen -> Projected 2D Triangle Vertices v0 v1 v2 -> Z-Buffer  -> Triangle  -> Updated Z-Buffer                     
 draw_triangle :: Screen ->  (V4 Double, V4 Double, V4 Double) -> [Double] -> Triangle -> IO [Double]
 draw_triangle screen projected_vertices zbuffer triangle  = do
