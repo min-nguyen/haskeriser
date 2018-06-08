@@ -38,6 +38,7 @@ dependencies:
 - JuicyPixels
 - binary
 - binary-bits
+- vector
 
 library:
   source-dirs: src

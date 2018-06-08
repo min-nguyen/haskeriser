@@ -19,6 +19,7 @@ import qualified SDL
 import qualified Data.ByteString as B
 import Codec.Picture
 import Codec.Picture.Types
+import Data.Vector.Storable as V
 
 -- data TGA_Header_t = TGA_Header_t {  idlength :: Char,
 --                                 colormaptype :: Char,
@@ -35,7 +36,8 @@ import Codec.Picture.Types
 --                             }
 
 data TGA_Header = TGA_Header {  width :: Int,
-                                height :: Int,
+								height :: Int,
+								imgdata :: V.Vector (PixelBaseComponent PixelRGB8),
                                 bitsperpixel :: Int
                             }
 				 | TGA_Error
@@ -50,7 +52,7 @@ read_tga filepath = do
 	return $ case contents of 
 					Left s  -> TGA_Error
 					Right d -> (case d of
-						ImageRGB8  p' -> TGA_Header (imageWidth $   p')  (imageHeight $   p')  (8)
-						ImageRGBA8  p -> TGA_Header (imageWidth $   p)  (imageHeight $   p)  (8)
+						ImageRGB8  p' -> TGA_Header (imageWidth $   p')  (imageHeight $   p') ((imageData p'):: V.Vector (PixelBaseComponent PixelRGB8))  (8) 
+						-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
 						_ -> TGA_Error)
 

@@ -44,7 +44,7 @@ loop draw_func triangles camera = do
 main :: IO ()
 main = do
     read_tga "resources/african_head_diffuse.tga"
-    -- model <- load_model
+    model <- load_model
     -- camera <- loadCamera
     -- loop draw_loop triangles camera
     return ()
