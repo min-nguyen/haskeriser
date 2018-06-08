@@ -47,16 +47,16 @@ draw_loop screen model light camera = do
 
     let screen_coords = map (\(x,y) -> x) screen_world_coords   -- :: [(V3 Int, V3 Int, V3 Int)]
         world_coords  = map (\(x,y) -> y) screen_world_coords   -- :: [(V3 Double, V3 Double, V3 Double)]
-        process_triangles idx coords = case coords of (x:xs) -> (\(screen, world) -> do
+        process_triangles idx coords = case coords of (x:xs) -> (\(screen_v, world_v) -> do
 
-                                                                            let (world_0, world_1, world_2) = world
+                                                                            let (world_0, world_1, world_2) = world_v
                                                                                 norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
                                                                                 light_intensity = norm * (direction light)
-
                                                                             when (light_intensity > 0) (do 
 
-                                                                                uv <- sequence $ map (model_uv model idx) ([0, 1, 2] :: [Int])
-                                                                                -- CALL DRAW FUNCTION HERE --
+                                                                                let uv = mapTuple3 (model_uv model idx) ((0, 1, 2) :: (Int, Int, Int))
+                                                                                    uv' = mapTuple3 (\uv_vec -> map_V2 fromIntegral uv_vec ) uv
+                                                                                draw_triangle screen screen_v uv' zbuffer 
                                                                                 
                                                                                 return ())
                                                                             process_triangles (idx + 1) xs) x
@@ -68,26 +68,24 @@ draw_loop screen model light camera = do
 -- #             Screen ->   Projected 2D Triangle Vertices   ->   UV Coordinates Z-Buffer  -> Updated Z-Buffer                     
 draw_triangle :: Screen ->  (V3 Int, V3 Int, V3 Int) ->  (V2 Int, V2 Int, V2 Int) -> [Double] -> IO [Double]
 draw_triangle screen screen_vertices uv_vertices zbuffer  = do
-    let ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v)) = order_vertices_i screen_vertices uv_vertices
+    let ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v)) = order_vertices_i screen_vertices uv_vertices 0
         ((v0, v1, v2), (uv0, uv1, uv2)) = ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v))
         triangle_height = v2y - v0y
 
     v_list <- mapM (\i -> do
             let h = fromIntegral i
 
-                second_half = (h > v1y - v0y) || (v1y == v0z) 
+                second_half = (h > (v1y - v0y)) || (v1y == v0z) 
                 segment_height = if second_half then v2y - v1y else v1y - v0y
                 alpha = h `div` (fromIntegral triangle_height)
                 beta = if second_half then (h - (v1y - v0y)) `div` segment_height else h `div` segment_height
-
+               
                 vA = v0 + (mul_V3_Num (v2 - v0) ( alpha))  
                 vB = if second_half then v1 + (mul_V3_Num (v2 - v1) beta) else v0 + (mul_V3_Num (v1 - v0) beta)
                 uvA = uv0 + (mul_V2_Num (uv2 - uv0) ( alpha))   
                 uvB = if second_half then uv1 + (mul_V2_Num (uv2 - uv1) beta) else uv0 + (mul_V2_Num (uv1 - uv0) beta)
 
-                -- (vAi, vBi) = mapTuple2 $ mapTuple3 floor (vA, vB)
-                -- (uvAi, uvBi) = mapTuple2 $ mapTuple2 floor (uvA, uvB)
-            return $ ((order_min_x_i (vA, vB) (uvA, uvB) ), i)  ) ([0 .. (triangle_height)] :: [Int])
+            return $ ((order_min_x_i (vA, vB) (uvA, uvB)  ), i)  ) ([0 .. (triangle_height)] :: [Int])
 
     zbuffer' <- draw_help v_list zbuffer screen
     return zbuffer'
@@ -96,8 +94,9 @@ draw_triangle screen screen_vertices uv_vertices zbuffer  = do
 draw_help :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> [Double] -> Screen -> IO [Double]
 draw_help v_list zbuffer screen = case v_list of (x:xs) ->  do
                                                         let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x
-                                                        print $ (vAx, vBx)
+                                                       
                                                         zbuffer' <- draw_helper v_list (vAx, vBx) vAx screen zbuffer 
+                                                      
                                                         draw_help xs zbuffer' screen
                                                  []     -> return zbuffer
 
@@ -105,19 +104,24 @@ draw_helper :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> In
 draw_helper v_list (start, end) index screen zbuffer =
                                     if index > end
                                         then return zbuffer
-                                        else case v_list of (v:vs) ->   let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst v
+                                        else case v_list of (v:vs) ->      do
+
+                                                                        let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst v
                                                                             ((vA', vB'), (uvA', uvB')) =  fst v
                                                                             phi = if vBx == vAx then (1.0 :: Double) else ((((fromIntegral index) - (fromIntegral vAx)) / ((fromIntegral vBx) - (fromIntegral vAx))))
                                                                             (V3 px py pz) = vA' + (mul_V3_Num (vB' - vA') (floor phi))
                                                                             (V2 pu pv) = uvA' + (mul_V2_Num (uvB' - uvA') (floor phi))
                                                                             idx = px + py * (fromIntegral $ width_i screen)
-                                                                        in  (if (zbuffer !! (idx)) < (fromIntegral pz)
+                                                                      
+                                                                        if (zbuffer !! (idx)) < (fromIntegral pz)
                                                                             then ( do
+                                                                                print "hey"
                                                                                 let zbuffer' = replaceAt (fromIntegral pz) idx zbuffer
                                                                                 sdl_put_pixel screen (V2 (fromIntegral px) (fromIntegral py)) (get_color Blue)
                                                                                 draw_helper vs (start,end) (index + 1) screen zbuffer')
                                                                             else ( do
-                                                                                draw_helper vs (start,end) (index + 1) screen zbuffer))
+                                                                                print "heyo"
+                                                                                draw_helper vs (start,end) (index + 1) screen zbuffer)
                                                             [] -> return zbuffer
                                     
                     
@@ -180,12 +184,15 @@ order_min_x_i (V3 vAx vAy vAz, V3 vBx vBy vBz) (V2 vAu vAv, V2 vBu vBv)
     | (vAx > vBx) = ((V3 vBx vBy vBz, V3 vAx vAy vAz), (V2 vBu vBv, V2 vAu vAv))
     | otherwise   = ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv))
 
-order_vertices_i :: (V3 Int, V3 Int, V3 Int) -> (V2 Int, V2 Int, V2 Int) -> ((V3 Int, V3 Int, V3 Int), (V2 Int, V2 Int, V2 Int))
-order_vertices_i (V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)  (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v)
-    | (v0y > v1y) = order_vertices_i (V3 v1x v1y v1z, V3 v0x v0y v0z, V3 v2x v2y v2z)  (V2 v1u v1v, V2 v0u v0v, V2 v2u v2v)
-    | (v0y > v2y) = order_vertices_i (V3 v2x v2y v2z, V3 v1x v1y v1z, V3 v0x v0y v0z)  (V2 v2u v2v, V2 v1u v1v, V2 v0u v0v)
-    | (v1y > v2y) = order_vertices_i (V3 v0x v0y v0z, V3 v2x v2y v2z, V3 v1x v1y v1z)  (V2 v0u v0v, V2 v2u v2v, V2 v1u v1v) 
-    | otherwise   = ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v))
+order_vertices_i :: (V3 Int, V3 Int, V3 Int) -> (V2 Int, V2 Int, V2 Int) -> Int -> ((V3 Int, V3 Int, V3 Int), (V2 Int, V2 Int, V2 Int))
+order_vertices_i (V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)  (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v) stage
+    | stage == 0 = if (v0y > v1y)   then order_vertices_i (V3 v1x v1y v1z, V3 v0x v0y v0z, V3 v2x v2y v2z)  (V2 v1u v1v, V2 v0u v0v, V2 v2u v2v) 1 
+                                    else order_vertices_i (V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)  (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v) 1
+    | stage == 1 = if (v0y > v2y)   then order_vertices_i (V3 v2x v2y v2z, V3 v1x v1y v1z, V3 v0x v0y v0z)  (V2 v2u v2v, V2 v1u v1v, V2 v0u v0v) 2
+                                    else order_vertices_i (V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)  (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v) 2
+    | stage == 2 = if (v1y > v2y)   then order_vertices_i (V3 v0x v0y v0z, V3 v2x v2y v2z, V3 v1x v1y v1z)  (V2 v0u v0v, V2 v2u v2v, V2 v1u v1v) 3
+                                    else order_vertices_i (V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)  (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v) 3
+    | otherwise = ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v))
 
 -- cam_mat = cam_projection_matrix camera
 -- viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75

@@ -90,9 +90,19 @@ fromMatV4sq m = let [va, vb, vc, vd] = map (\[x, y, z, w] -> V4 x y z w) $ toLis
 or_V3 :: V3 Double -> V3 Double -> V3 Double
 or_V3 (V3 ax ay az) (V3 bx by bz) = V3 (ay * bz - az * by)  (az * bx - ax * bz)  (az * by - ay * bx)
 
+map_V2 :: (a -> b) -> V2 a -> V2 b
+map_V2 f (V2 x y ) = V2 (f x) (f y)
+
+map_V3 :: (a -> b) -> V3 a -> V3 b
+map_V3 f (V3 x y z) = V3 (f x) (f y) (f z)
+
 norm_V3 :: V3 Double  -> V3 Double
 norm_V3 (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
                         in V3 (ax/magnitude) (ay/magnitude) (az/magnitude)
+
+-- norm_V3I :: V3 Int  -> V3 Int
+-- norm_V3I (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
+--                         in V3 (ax/magnitude) (ay/magnitude) (az/magnitude)
 
 norm_V4 :: V4 Double  -> V4 Double
 norm_V4 (V4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))

@@ -79,11 +79,10 @@ model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fs
 model_vert :: Model -> Int -> V3 Double
 model_vert model ind = fst $ (verts model) !! ind
 
-model_uv :: Model -> Int -> Int -> IO (V2 Integer)
-model_uv model iface nvert =  do
-                            let V3 x y z = fst $ ( ( (faces model)) !! iface) !! nvert
-                                V2 x' y' = fst $ (uvs model) !! ( fromIntegral (y - 1))
-                            return $ V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
+model_uv :: Model -> Int -> Int -> V2 Integer
+model_uv model iface nvert = let V3 x y z = fst $ ( ( (faces model)) !! iface) !! nvert
+                                 V2 x' y' = fst $ (uvs model) !! ( fromIntegral (y - 1))
+                             in  V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False
