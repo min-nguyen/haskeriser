@@ -68,7 +68,7 @@ draw_triangle screen screen_vertices uv_vertices zbuffer  = do
         ((v0, v1, v2), (uv0, uv1, uv2)) = ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z), (V2 v0u v0v, V2 v1u v1v, V2 v2u v2v))
         triangle_height = v2y - v0y
 
-    [((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv))] <- mapM (\i -> do
+    v_list <- mapM (\i -> do
             let h = fromIntegral i
 
                 second_half = (h > v1y - v0y) || (v1y == v0z) 
@@ -83,23 +83,39 @@ draw_triangle screen screen_vertices uv_vertices zbuffer  = do
 
                 -- (vAi, vBi) = mapTuple2 $ mapTuple3 floor (vA, vB)
                 -- (uvAi, uvBi) = mapTuple2 $ mapTuple2 floor (uvA, uvB)
-            return $ order_min_x_i (vA, vB) (uvA, uvB)) ([0 .. (triangle_height)] :: [Int])
+            return $ ((order_min_x_i (vA, vB) (uvA, uvB) ), i)  ) ([0 .. (triangle_height)] :: [Int])
 
-    let ((vA', vB'), (uvA', uvB')) = ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv))
+    zbuffer' <- draw_help v_list zbuffer screen
+    return zbuffer'
 
-    
-    return []
 
-draw_helper :: ((V3 Int, V3 Int), (V2 Int, V2 Int)) -> Screen -> Int -> [Double] -> [Double]
-draw_helper ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) screen index zbuffer = 
-                    let ((vA', vB'), (uvA', uvB')) =  ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) 
-                        phi = if vBx == vAx then (1.0 :: Double) else ((((fromIntegral index) - (fromIntegral vAx)) / ((fromIntegral vBx) - (fromIntegral vAx))))
-                        (V3 px py pz) = vA' + (mul_V3_Num (vB' - vA') (floor phi))
-                        (V2 pu pv) = uvA' + (mul_V2_Num (uvB' - uvA') (floor phi))
-                        idx = px + py * (fromIntegral $ width_i screen)
-                    in  (if (zbuffer !! (idx)) < (fromIntegral pz)
-                        then (replaceAt (fromIntegral pz) idx zbuffer)  
-                        else zbuffer)
+draw_help :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> [Double] -> Screen -> IO [Double]
+draw_help v_list zbuffer screen = case v_list of (x:xs) ->  do
+                                                        let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x
+                                                        zbuffer' <- draw_helper v_list (vAx, vBx) vAx screen zbuffer 
+                                                        draw_help xs zbuffer' screen
+                                                 []     -> return zbuffer
+
+draw_helper :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> Screen -> [Double] -> IO [Double]
+draw_helper v_list (start, end) index screen zbuffer =
+                                    if index > end
+                                        then return zbuffer
+                                        else case v_list of (v:vs) ->   let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst v
+                                                                            ((vA', vB'), (uvA', uvB')) =  fst v
+                                                                            phi = if vBx == vAx then (1.0 :: Double) else ((((fromIntegral index) - (fromIntegral vAx)) / ((fromIntegral vBx) - (fromIntegral vAx))))
+                                                                            (V3 px py pz) = vA' + (mul_V3_Num (vB' - vA') (floor phi))
+                                                                            (V2 pu pv) = uvA' + (mul_V2_Num (uvB' - uvA') (floor phi))
+                                                                            idx = px + py * (fromIntegral $ width_i screen)
+                                                                        in  (if (zbuffer !! (idx)) < (fromIntegral pz)
+                                                                            then ( do
+                                                                                let zbuffer' = replaceAt (fromIntegral pz) idx zbuffer
+                                                                                sdl_put_pixel screen (V2 (fromIntegral px) (fromIntegral py)) (get_color Blue)
+                                                                                draw_helper vs (start,end) (index + 1) screen zbuffer')
+                                                                            else ( do
+                                                                                draw_helper vs (start,end) (index + 1) screen zbuffer))
+                                                            [] -> return zbuffer
+                                    
+                    
                     
                     
                     
