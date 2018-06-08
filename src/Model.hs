@@ -35,21 +35,21 @@ load_model = do
     content <- readFile (args !! 0)
     let linesOfFile = lines content
     
-        verts = stringListToV3List $ map (filter isValidNumber) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == ' '
+        verts = stringListToV3List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == ' '
                                                                                                        _ -> False)) linesOfFile
 
-        norms = stringListToV3List $ map (filter isValidNumber) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 'n'
+        norms = stringListToV3List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 'n'
                                                                                                        _ -> False)) linesOfFile
 
-        uvs   = stringListToV2List $ map (filter isValidNumber) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 't'
+        uvs   = stringListToV2List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 't'
                                                                                                        _ -> False)) linesOfFile
         
-        faces = map (map $ filter isValidNumber) $ 
+        faces = map (map $ filter valid_obj_num) $ 
                     ( map (map words)) $ 
                         map (map $ map (\c -> if (c == '/') then ' ' else c)) $ 
                              map words $ filter (\l -> (case l of (x:xs) -> x == 'f'
                                                                   _ -> False)) linesOfFile
-        faces' = splitEvery 3 (stringListToV3ListI [z | x <- faces, z <- x, not (null z)])
+        faces' = chunksOf 3 (stringListToV3ListI [z | x <- faces, z <- x, not (null z)])
 
         nats = 1 : map (+1) (nats)
 
@@ -76,14 +76,14 @@ model_uv model iface nvert =  let V3 x y z = fst $ ( ( (faces model)) !! iface) 
                                   V2 x' y' = fst $ (uvs model) !! ( fromIntegral y)
                               in V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
 
-isValidNumber :: String -> Bool
-isValidNumber ""  = False
-isValidNumber "." = False
-isValidNumber xs  =
+valid_obj_num :: String -> Bool
+valid_obj_num ""  = False
+valid_obj_num "." = False
+valid_obj_num xs  =
   case dropWhile Char.isDigit xs of
     ""       -> True
     ('.':ys) -> all Char.isDigit ys
-    ('-':ys) -> isValidNumber ys
+    ('-':ys) -> valid_obj_num ys
     _        -> False
 
 

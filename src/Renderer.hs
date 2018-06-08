@@ -21,19 +21,7 @@ import Model
 import Light
 import Camera
 import Control.Lens
-
--- # Triangle Vertices v0 v1 v2 -> Queried Point p -> Barycentric Coordinates
-barycentric :: (V2 Double, V2 Double, V2 Double) -> V2 Double -> V3 Double
-barycentric (v0, v1, v2) p = if abs b2 < 1 then (V3 (-1) 1 1) else V3 (1 - (b0 + b1)/b2) (b1/b2) (b0/b2)
-                        where (b0, b1, b2) = cross3(v2x - v0x, v1x - v0x, v0x - px) (v2y - v0y, v1y - v0y, v0y - py)
-                              V2 px  py  = p 
-                              V2 v0x v0y = v0
-                              V2 v1x v1y = v1 
-                              V2 v2x v2y = v2
-
-replaceAt :: Double -> Int -> [Double] ->[Double]
-replaceAt newElement n array = take n array ++ [newElement] ++ drop (n + 1) array
-
+import Geometry
 
 draw_loop :: Screen -> Model -> Light -> Camera -> IO()
 draw_loop screen model light camera = do
@@ -59,7 +47,7 @@ draw_loop screen model light camera = do
         world_coords  = V3 v3_wa v3_wb v3_wc
         norm = norm_V3 $ or_V3  (v3_wc - v3_wa) (v3_wb - v3_wc)
         light_intensity = norm * (direction light)
-        -- if light_intensity > 0 then let uv = V3 
+        -- if light_intensity > 0 then let uv = model_uv 
     return ()
 
 -- # Screen -> Projected 2D Triangle Vertices v0 v1 v2 -> Z-Buffer  -> Triangle  -> Updated Z-Buffer                     
@@ -96,17 +84,21 @@ draw_triangle screen projected_vertices zbuffer triangle  = do
     
     return zbuffer'
 
-       
-    -- cam_mat = cam_projection_matrix camera
-    -- viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75
+
     
-    
-    -- f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
-    --                                                             let (va, vb, vc) = points x
-    --                                                             -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
-    --                                                             let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
-    --                                                                 v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
-    --                                                                 v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
-    --                                                             next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
-    --                                                             f next_zbuff' xs 
-    --                                                      [] -> return ()
+
+
+
+-- cam_mat = cam_projection_matrix camera
+-- viewport_mat = viewport_matrix (fromIntegral $ toInteger $ width screen)/8.0 (fromIntegral $ toInteger $ height screen)/8.0 (fromIntegral $ toInteger $ width screen)*0.75 (fromIntegral $ toInteger $ height screen)*0.75
+
+
+-- f next_zbuff next_triangles = case next_triangles of (x:xs) -> do 
+--                                                             let (va, vb, vc) = points x
+--                                                             -- print $ toLists $ cam_matrix * (toMatV4 va) ------- Fix this
+--                                                             let v_a = (fromMatV4 $ cam_matrix * (toMatV4 va))
+--                                                                 v_b = (fromMatV4 $ cam_matrix * (toMatV4 vb))
+--                                                                 v_c = (fromMatV4 $ cam_matrix * (toMatV4 vc))
+--                                                             next_zbuff' <- draw_triangle screen (v_a, v_b, v_c) next_zbuff x
+--                                                             f next_zbuff' xs 
+--                                                      [] -> return ()

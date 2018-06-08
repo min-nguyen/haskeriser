@@ -36,6 +36,9 @@ viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          0,
 clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval
 
+replaceAt :: Double -> Int -> [Double] ->[Double]
+replaceAt newElement n array = take n array ++ [newElement] ++ drop (n + 1) array
+
 toMatV2 :: V2 Double -> Matrix Double
 toMatV2 (V2 a b) = fromList 2 1 [a, b]
 

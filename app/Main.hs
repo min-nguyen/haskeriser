@@ -38,8 +38,6 @@ loop draw_func triangles camera = do
         loop'
         SDL.destroyWindow (window screen)
         SDL.quit
-
-
              
 main :: IO ()
 main = do
@@ -50,10 +48,10 @@ main = do
     return ()
 
 
-test1 :: Screen -> IO ()
-test1 screen = do
-    let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
-    let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
-    sequence $ map (\(xy, color) -> sdl_put_pixel screen xy color) 
-                        (zip points colors)
-    return ()
+-- test1 :: Screen -> IO ()
+-- test1 screen = do
+--     let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
+--     let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
+--     sequence $ map (\(xy, color) -> sdl_put_pixel screen xy color) 
+--                         (zip points colors)
+--     return ()
