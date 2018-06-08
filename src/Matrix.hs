@@ -49,19 +49,19 @@ toMatV4 :: V4 Double -> Matrix Double
 toMatV4 (V4 a b c d) = fromList 4 1 [a, b, c, d]
 
 fromMatV2 :: Matrix Double -> V2 Double
-fromMatV2 m  = case toLists m of (x:xs) -> (\(x:y:ls) -> V2 x y) $ head $ toLists m
+fromMatV2 m  = case toLists m of (x:xs) -> (\(x:y:_) -> V2 x y) $ head $ toLists m
                                  [] -> V2 0 0 
 
 fromMatV3 :: Matrix Double -> V3 Double
-fromMatV3 m  = case toLists m of (x:xs) -> (\(x:y:z:ls) -> V3 x y z) $ head $ toLists m
+fromMatV3 m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 x y z) $ head $ toLists m
                                  [] -> V3 0 0 0 
 
 fromMatV4 :: Matrix Double -> V4 Double
-fromMatV4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:ls) -> V4 x y z w) $ Matrix.toList m
+fromMatV4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V4 x y z w) $ Matrix.toList m
                                   [] -> V4 0 0 0 0
 
 fromMatV3I :: Matrix Double -> V3 Int
-fromMatV3I m  = case toLists m of (x:xs) -> (\(x:y:z:ls) -> V3 (floor x) (floor y) (floor z)) $ head $ toLists m
+fromMatV3I m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 (floor x) (floor y) (floor z)) $ head $ toLists m
                                   [] -> V3 0 0 0
 
 fromMatV2sq :: Matrix Double -> (V2 Double, V2 Double)
@@ -95,3 +95,9 @@ stringListToV2List str = [(V2 (read a) (read b) ) | (a:b:_) <- (str) ]
 
 stringListToV3ListI :: [[String]] -> [V3 Integer]
 stringListToV3ListI str = [(V3 (read a) (read b) (read c) ) | (a:b:c:_) <- (str) ]
+
+mapTuple2 :: (a -> b) -> (a, a) -> (b, b)
+mapTuple2 f (a1, a2) = (f a1, f a2)
+
+mapTuple3 :: (a -> b) -> (a, a, a) -> (b, b, b)
+mapTuple3 f (a1, a2, a3) = (f a1, f a2, f a3)

@@ -27,7 +27,9 @@ data Model = Model {verts       :: [(V3 Double, Int)],
                     faces       :: [[(V3 Integer, Int)]],
                     norms       :: [(V3 Double, Int)],
                     uvs         :: [(V2 Double, Int)],
-                    diffuse_map :: TGA_Header}
+                    diffuse_map :: TGA_Header,
+                    nfaces :: Int,
+                    nverts :: Int}
 
 load_model :: IO Model
 load_model = do
@@ -61,12 +63,12 @@ load_model = do
 
     print faces''
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"    
-    return $ Model verts'' faces'' norms'' uvs''   diffuse_map
+    return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')
 
 
 
 model_face :: Model -> Int -> [Integer]
-model_face model ind = [x | face_v3 <- ((faces model !! ind)), let V3 x y z = fst face_v3]
+model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fst face_v3]
 
 model_vert :: Model -> Int -> V3 Double
 model_vert model ind = fst $ (verts model) !! ind

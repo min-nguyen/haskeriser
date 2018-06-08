@@ -5,6 +5,7 @@ module Renderer
 
 import Prelude hiding (any, mapM_)
 import Control.Monad hiding (mapM_)
+import Control.Arrow ((***))
 import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
@@ -33,21 +34,38 @@ draw_loop screen model light camera = do
         projection_mat = cam_projection_matrix camera
         viewport_mat = viewport_matrix ((fromIntegral $ width_i screen)/8.0) ((fromIntegral $ height_i screen)/8.0) ((fromIntegral $ width_i screen)*0.75) ((fromIntegral $ height_i screen)*0.75)
     
-    --------    
+    --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
     screen_world_coords <-  mapM (\ind -> do 
                                     let face = model_face model ind 
-                                        v = model_vert model ind
-                                        screen_coord v = fromMatV3 (viewport_mat * projection_mat * (toMatV3 v)) 
-                                        screen_coords = screen_coord v 
-                                    return ((screen_coords, v) :: (V3 Double, V3 Double))) ([1, 2, 3] :: [Int])
+                                        (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert model (fromIntegral $ (face !! i))) (0,1,2)
+                                        screen_coord (V3 a b c) = ((fromMatV3I (viewport_mat * projection_mat * (toMatV3 (V3 a b c)))) :: (V3 Int))
+                                        (s_v0, s_v1, s_v2) = mapTuple3 (\v -> screen_coord v)  (w_v0, w_v1, w_v2)
+                                    return $ (((s_v0, s_v1, s_v2),  (w_v0, w_v1, w_v2)) :: ((V3 Int, V3 Int, V3 Int), (V3 Double, V3 Double, V3 Double)))) ([0 .. (nfaces model)] :: [Int])
 
-    let [v3_sa, v3_sb, v3_sc] = map (\(x,y) -> x) screen_world_coords
-        [v3_wa, v3_wb, v3_wc] = map (\(x,y) -> y) screen_world_coords
-        screen_coords = V3 v3_sa v3_sb v3_sc
-        world_coords  = V3 v3_wa v3_wb v3_wc
-        norm = norm_V3 $ or_V3  (v3_wc - v3_wa) (v3_wb - v3_wc)
-        light_intensity = norm * (direction light)
-        -- if light_intensity > 0 then let uv = model_uv 
+    let screen_coords = map (\(x,y) -> x) screen_world_coords   -- :: [(V3 Int, V3 Int, V3 Int)]
+        world_coords  = map (\(x,y) -> y) screen_world_coords   -- :: [(V3 Double, V3 Double, V3 Double)]
+        process_triangles idx = if idx >= nfaces model
+                                then return ()
+                                else (\(screen, world) -> do
+                                        let (world_0, world_1, world_2) = world
+                                            norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
+                                            light_intensity = norm * (direction light)
+                                        
+                                        when (light_intensity > 0) (do 
+                                            let uv = map (model_uv model idx) ([0, 1, 2] :: [Int])
+                                            -- CALL DRAW FUNCTION HERE --
+                                            return ())
+                                        
+                                        process_triangles (idx + 1) ) (screen_world_coords !! idx)
+
+    process_triangles 0
+    --     -- For Each Face Do This
+    -- mapM (\(screen, world) -> do
+    --         let (world_0, world_1, world_2) = world
+    --             norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
+    --             light_intensity = norm * (direction light)
+    --         return ()) screen_world_coords
+    --         if light_intensity > 0 then let uv = model_uv model  
     return ()
 
 -- # Screen -> Projected 2D Triangle Vertices v0 v1 v2 -> Z-Buffer  -> Triangle  -> Updated Z-Buffer                     
