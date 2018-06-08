@@ -36,29 +36,33 @@ draw_loop screen model light camera = do
     
     --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
     screen_world_coords <-  mapM (\ind -> do 
+
                                     let face = model_face model ind 
-                                        (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert model (fromIntegral $ (face !! i))) (0,1,2)
-                                        screen_coord (V3 a b c) = ((fromMatV3I (viewport_mat * projection_mat * (toMatV3 (V3 a b c)))) :: (V3 Int))
+                                        (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert model (fromIntegral $ (face !! i) - 1)) (0,1,2)
+                                    let screen_coord (V3 a b c) = ((fromMatV4toV3I (viewport_mat * projection_mat * (fromV3toMatV4 (V3 a b c)) )) :: (V3 Int))
                                         (s_v0, s_v1, s_v2) = mapTuple3 (\v -> screen_coord v)  (w_v0, w_v1, w_v2)
-                                    return $ (((s_v0, s_v1, s_v2),  (w_v0, w_v1, w_v2)) :: ((V3 Int, V3 Int, V3 Int), (V3 Double, V3 Double, V3 Double)))) ([0 .. (nfaces model)] :: [Int])
+
+
+                                    return $ (((s_v0, s_v1, s_v2),  (w_v0, w_v1, w_v2)) :: ((V3 Int, V3 Int, V3 Int), (V3 Double, V3 Double, V3 Double)))) ([0 .. (nfaces model) - 1] :: [Int])
 
     let screen_coords = map (\(x,y) -> x) screen_world_coords   -- :: [(V3 Int, V3 Int, V3 Int)]
         world_coords  = map (\(x,y) -> y) screen_world_coords   -- :: [(V3 Double, V3 Double, V3 Double)]
-        process_triangles idx = if idx >= nfaces model
-                                then return ()
-                                else (\(screen, world) -> do
-                                        let (world_0, world_1, world_2) = world
-                                            norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
-                                            light_intensity = norm * (direction light)
-                                        
-                                        when (light_intensity > 0) (do 
-                                            let uv = map (model_uv model idx) ([0, 1, 2] :: [Int])
-                                            -- CALL DRAW FUNCTION HERE --
-                                            return ())
-                                        
-                                        process_triangles (idx + 1) ) (screen_world_coords !! idx)
+        process_triangles idx coords = case coords of (x:xs) -> (\(screen, world) -> do
 
-    process_triangles 0 
+                                                                            let (world_0, world_1, world_2) = world
+                                                                                norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
+                                                                                light_intensity = norm * (direction light)
+
+                                                                            when (light_intensity > 0) (do 
+
+                                                                                uv <- sequence $ map (model_uv model idx) ([0, 1, 2] :: [Int])
+                                                                                -- CALL DRAW FUNCTION HERE --
+                                                                                
+                                                                                return ())
+                                                                            process_triangles (idx + 1) xs) x
+                                                      [] -> return ()
+
+    process_triangles 0 screen_world_coords
     return ()
 
 -- #             Screen ->   Projected 2D Triangle Vertices   ->   UV Coordinates Z-Buffer  -> Updated Z-Buffer                     
@@ -92,6 +96,7 @@ draw_triangle screen screen_vertices uv_vertices zbuffer  = do
 draw_help :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> [Double] -> Screen -> IO [Double]
 draw_help v_list zbuffer screen = case v_list of (x:xs) ->  do
                                                         let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x
+                                                        print $ (vAx, vBx)
                                                         zbuffer' <- draw_helper v_list (vAx, vBx) vAx screen zbuffer 
                                                         draw_help xs zbuffer' screen
                                                  []     -> return zbuffer

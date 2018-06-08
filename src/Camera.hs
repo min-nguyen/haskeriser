@@ -21,6 +21,6 @@ import Control.Lens
 
 data Camera = Camera {  position :: V4 Double }
 
-loadCamera :: IO Camera
-loadCamera = do
+load_camera :: IO Camera
+load_camera = do
     return $ Camera (V4 0 0 (-0.5) 1)   

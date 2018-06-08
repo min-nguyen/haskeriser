@@ -20,9 +20,10 @@ import Renderer
 import Model
 import Camera
 import TGA
+import Light
 
-loop :: (Screen -> [Triangle] -> Camera -> IO()) -> [Triangle] -> Camera -> IO()
-loop draw_func triangles camera = do
+loop :: (Screen -> Model -> Light -> Camera -> IO()) -> Model -> Light -> Camera -> IO()
+loop draw_func model light camera = do
         screen <- sdl_init
         let loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
@@ -30,7 +31,7 @@ loop draw_func triangles camera = do
                         sdl_set_render_target (renderer screen) (Just $ texture screen)
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
-                        draw_func screen  triangles camera 
+                        draw_func screen model light camera 
                         sdl_set_render_target (renderer screen) Nothing
                         sdl_render_texture (renderer screen) (texture screen) 0 Nothing (Just (fromIntegral 0)) (Just $ center screen) Nothing
                         SDL.present (renderer screen)
@@ -43,8 +44,9 @@ main :: IO ()
 main = do
     read_tga "resources/african_head_diffuse.tga"
     model <- load_model
-    -- camera <- loadCamera
-    -- loop draw_loop triangles camera
+    camera <- load_camera
+    light <- load_light
+    loop draw_loop model light camera
     return ()
 
 

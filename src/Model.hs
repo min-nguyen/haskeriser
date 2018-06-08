@@ -17,6 +17,7 @@ import Data.Cross
 import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
+import System.IO
 import qualified SDL
 import Control.Lens
 import Matrix
@@ -37,11 +38,11 @@ load_model = do
     content <- readFile (args !! 0)
     let linesOfFile = lines content
     
-        verts = stringListToV3List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == ' '
-                                                                                                       _ -> False)) linesOfFile
+        verts = stringListToV3List $ concat $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:_) -> x == 'v' && y == ' '
+                                                                                                                _ -> False)) linesOfFile
 
-        norms = stringListToV3List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 'n'
-                                                                                                       _ -> False)) linesOfFile
+        norms = stringListToV3List $ concat $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:_) -> x == 'v' && y == 'n'
+                                                                                                                _ -> False)) linesOfFile
 
         uvs   = stringListToV2List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 't'
                                                                                                        _ -> False)) linesOfFile
@@ -60,8 +61,13 @@ load_model = do
         norms'' = zipWith (\f i -> (f, i)) norms (nats :: [Int])
         uvs'' = zipWith (\f i -> (f, i)) uvs (nats :: [Int])
 
-
-    print faces''
+    print $ length faces''
+    print $ length verts''
+    print $ length norms''
+    print $ length uvs''
+    -- sequence $ map print verts''
+    -- outh <- openFile "output.txt" WriteMode
+    -- sequence $ map (\s -> hPutStrLn outh (show s) ) faces''
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"    
     return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')
 
@@ -73,19 +79,20 @@ model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fs
 model_vert :: Model -> Int -> V3 Double
 model_vert model ind = fst $ (verts model) !! ind
 
-model_uv :: Model -> Int -> Int -> V2 Integer
-model_uv model iface nvert =  let V3 x y z = fst $ ( ( (faces model)) !! iface) !! nvert
-                                  V2 x' y' = fst $ (uvs model) !! ( fromIntegral y)
-                              in V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
+model_uv :: Model -> Int -> Int -> IO (V2 Integer)
+model_uv model iface nvert =  do
+                            let V3 x y z = fst $ ( ( (faces model)) !! iface) !! nvert
+                                V2 x' y' = fst $ (uvs model) !! ( fromIntegral (y - 1))
+                            return $ V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
 
-valid_obj_num :: String -> Bool
+valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False
-valid_obj_num "." = False
 valid_obj_num xs  =
   case dropWhile Char.isDigit xs of
     ""       -> True
-    ('.':ys) -> all Char.isDigit ys
+    ('.':ys) -> valid_obj_num ys
     ('-':ys) -> valid_obj_num ys
+    ('e':'-':ys) -> all Char.isDigit ys
     _        -> False
 
 

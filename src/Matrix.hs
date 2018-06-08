@@ -48,6 +48,9 @@ toMatV3 (V3 a b c) = fromList 3 1 [a, b, c]
 toMatV4 :: V4 Double -> Matrix Double
 toMatV4 (V4 a b c d) = fromList 4 1 [a, b, c, d]
 
+fromV3toMatV4 ::  V3 Double -> Matrix Double
+fromV3toMatV4 (V3 a b c) = fromList 4 1 [a, b, c, 1.0]
+
 fromMatV2 :: Matrix Double -> V2 Double
 fromMatV2 m  = case toLists m of (x:xs) -> (\(x:y:_) -> V2 x y) $ head $ toLists m
                                  [] -> V2 0 0 
@@ -59,6 +62,14 @@ fromMatV3 m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 x y z) $ head $ toL
 fromMatV4 :: Matrix Double -> V4 Double
 fromMatV4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V4 x y z w) $ Matrix.toList m
                                   [] -> V4 0 0 0 0
+
+fromMatV4toV3 :: Matrix Double -> V3 Double
+fromMatV4toV3 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 x y z) $ Matrix.toList m
+                                      [] -> V3 0 0 0
+
+fromMatV4toV3I :: Matrix Double -> V3 Int
+fromMatV4toV3I m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 (floor x) (floor y) (floor z)) $ Matrix.toList m
+                                       [] -> V3 0 0 0
 
 fromMatV3I :: Matrix Double -> V3 Int
 fromMatV3I m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 (floor x) (floor y) (floor z)) $ head $ toLists m
@@ -87,8 +98,9 @@ norm_V4 :: V4 Double  -> V4 Double
 norm_V4 (V4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))
                            in V4 (ax/magnitude) (ay/magnitude) (az/magnitude) (aw/magnitude)
 
-stringListToV3List :: [[String]] -> [V3 Double]
-stringListToV3List str = [(V3 (read a) (read b) (read c)) | (a:b:c:_) <- (str) ]
+stringListToV3List :: [String] -> [V3 Double]
+stringListToV3List str = case str of (x:xs) -> let (a:b:c:_) = take 3 (str) in ((V3 (read a) (read b) (read c)):(stringListToV3List $ drop 3 str))
+                                     [] -> []
 
 stringListToV2List :: [[String]] -> [V2 Double]
 stringListToV2List str = [(V2 (read a) (read b) ) | (a:b:_) <- (str) ]
