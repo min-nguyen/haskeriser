@@ -36,6 +36,8 @@ dependencies:
 - matrix
 - split
 - JuicyPixels
+- binary
+- binary-bits
 
 library:
   source-dirs: src
