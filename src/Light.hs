@@ -29,4 +29,4 @@ data Light = Light {direction   :: V3 Double}
 
 
 load_light :: IO Light
-load_light = return $ Light (V3 0 (-1) 0)
+load_light = return $ Light (V3 0 0 (-1))

@@ -66,9 +66,9 @@ load_model = do
     print $ length verts''
     print $ length norms''
     print $ length uvs''
-    -- sequence $ map print verts''
-    -- outh <- openFile "output.txt" WriteMode
-    -- sequence $ map (\s -> hPutStrLn outh (show s) ) faces''
+    sequence $ map print verts''
+    outh <- openFile "output.txt" WriteMode
+    sequence $ map (\s -> hPutStrLn outh (show s) ) verts''
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"    
     return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')
 
@@ -80,10 +80,10 @@ model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fs
 model_vert :: Model -> Int -> V3 Double
 model_vert model ind = fst $ (verts model) !! ind
 
-model_uv :: Model -> Int -> Int -> V2 Double
+model_uv :: Model -> Int -> Int -> V2 Int
 model_uv model iface nvert = let V3 x y z = fst $ ((faces model) !! iface) !! nvert
                                  V2 x' y' = fst $ (uvs model) !! ( fromIntegral y)
-                             in  V2 (x' * (fromIntegral $ width $ diffuse_map model)) (y' * (fromIntegral $ height $ diffuse_map model)) ----- UPDATE THIS
+                             in  V2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False
