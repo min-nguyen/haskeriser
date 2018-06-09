@@ -47,16 +47,17 @@ load_model = do
         uvs   = stringListToV2List $ map (filter valid_obj_num) $ map words $ filter (\l -> (case l of (x:y:xs) -> x == 'v' && y == 't'
                                                                                                        _ -> False)) linesOfFile
         
-        faces = map (map $ filter valid_obj_num) $ 
-                    ( map (map words)) $ 
-                        map (map $ map (\c -> if (c == '/') then ' ' else c)) $ 
-                             map words $ filter (\l -> (case l of (x:xs) -> x == 'f'
-                                                                  _ -> False)) linesOfFile
-        faces' = chunksOf 3 (stringListToV3ListI [z | x <- faces, z <- x, not (null z)])
+        faces1 = map (map $ filter valid_obj_num) $ 
+                        ( map (map words)) $ 
+                            map (map $ map (\c -> if (c == '/') then ' ' else c)) $ 
+                                map words $ filter (\l -> (case l of (x:xs) -> x == 'f'
+                                                                     _ -> False)) linesOfFile
+        faces2 = stringListToV3ListI [z | x <- faces1, z <- x, not (null z)]
+        faces3 = chunksOf 3 $ map (\n -> (n - 1)) faces2
 
         nats = 1 : map (+1) (nats)
 
-        faces'' = zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces' (map (\x -> [x]) ((nats :: [Int])) :: [[Int]])
+        faces'' = zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]])
         verts'' = zipWith (\f i -> (f, i)) verts (nats :: [Int])
         norms'' = zipWith (\f i -> (f, i)) norms (nats :: [Int])
         uvs'' = zipWith (\f i -> (f, i)) uvs (nats :: [Int])
@@ -79,10 +80,10 @@ model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fs
 model_vert :: Model -> Int -> V3 Double
 model_vert model ind = fst $ (verts model) !! ind
 
-model_uv :: Model -> Int -> Int -> V2 Integer
-model_uv model iface nvert = let V3 x y z = fst $ ( ( (faces model)) !! iface) !! nvert
-                                 V2 x' y' = fst $ (uvs model) !! ( fromIntegral (y - 1))
-                             in  V2 (floor x' * (toInteger $ width $ diffuse_map model)) (floor y' * (toInteger $ height $ diffuse_map model)) ----- UPDATE THIS
+model_uv :: Model -> Int -> Int -> V2 Double
+model_uv model iface nvert = let V3 x y z = fst $ ((faces model) !! iface) !! nvert
+                                 V2 x' y' = fst $ (uvs model) !! ( fromIntegral y)
+                             in  V2 (x' * (fromIntegral $ width $ diffuse_map model)) (y' * (fromIntegral $ height $ diffuse_map model)) ----- UPDATE THIS
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False

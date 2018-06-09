@@ -23,4 +23,4 @@ data Camera = Camera {  position :: V4 Double }
 
 load_camera :: IO Camera
 load_camera = do
-    return $ Camera (V4 0 0 (-0.5) 1)   
+    return $ Camera (V4 0 0 3 1)   

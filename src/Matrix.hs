@@ -28,10 +28,10 @@ cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
                             where V4 x y z w = position cam
 
 viewport_matrix :: Double -> Double -> Double -> Double -> Matrix Double
-viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          0,
-                                        0,       h/2.0,     0,          0,
-                                        0,       0,         255/2.0,    0,
-                                        x+y/2.0, y+h/2.0,   255/2.0,    1]
+viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
+                                        0,       h/2.0,     0,          y+h/2.0,
+                                        0,       0,         255/2.0,    255/2.0,
+                                        0,       0,         0,          1]
 
 clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval
@@ -64,7 +64,7 @@ fromMatV4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V4 x y z w) $ Matri
                                   [] -> V4 0 0 0 0
 
 fromMatV4toV3 :: Matrix Double -> V3 Double
-fromMatV4toV3 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 x y z) $ Matrix.toList m
+fromMatV4toV3 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 (x/w) (y/w) (z/w)) $ Matrix.toList m
                                       [] -> V3 0 0 0
 
 fromMatV4toV3I :: Matrix Double -> V3 Int
@@ -88,7 +88,7 @@ fromMatV4sq m = let [va, vb, vc, vd] = map (\[x, y, z, w] -> V4 x y z w) $ toLis
                 in (va, vb, vc, vd)
 
 or_V3 :: V3 Double -> V3 Double -> V3 Double
-or_V3 (V3 ax ay az) (V3 bx by bz) = V3 (ay * bz - az * by)  (az * bx - ax * bz)  (az * by - ay * bx)
+or_V3 (V3 ax ay az) (V3 bx by bz) = V3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
 
 map_V2 :: (a -> b) -> V2 a -> V2 b
 map_V2 f (V2 x y ) = V2 (f x) (f y)
