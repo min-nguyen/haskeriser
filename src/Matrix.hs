@@ -19,6 +19,7 @@ import qualified SDL
 import SDL_Aux
 import Control.Lens
 import Camera
+import qualified Data.Vector as V
 
 cam_projection_matrix :: Camera -> Matrix Double
 cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
@@ -36,8 +37,8 @@ viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
 clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval
 
-replaceAt :: Double -> Int -> [Double] ->[Double]
-replaceAt newElement n array = take n array ++ [newElement] ++ drop (n + 1) array
+replaceAt :: Double -> Int -> V.Vector Double -> V.Vector Double 
+replaceAt newElement n array = V.take n array V.++  (newElement `V.cons` V.drop (n + 1) array)
 
 toMatV2 :: V2 Double -> Matrix Double
 toMatV2 (V2 a b) = fromList 2 1 [a, b]

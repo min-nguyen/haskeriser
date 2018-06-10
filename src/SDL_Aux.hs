@@ -1,7 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE BangPatterns #-}
+ 
 module SDL_Aux where
 
 
@@ -14,6 +15,8 @@ import SDL.Vect
 import Data.Word8
 import SDL (($=))
 import qualified SDL
+-- import Data.Vector.Storable
+import qualified Data.Vector.Storable as V
 
 screenWidth, screenHeight :: CInt
 (screenWidth, screenHeight) = (800, 800)
@@ -24,10 +27,10 @@ data Texture = Texture SDL.Texture (V2 CInt)
 data Screen = Screen  { window    :: SDL.Window,
                         renderer  :: SDL.Renderer,
                         texture   :: Texture,
-                        height    :: CInt,
-                        width     :: CInt,
-                        height_i  :: Int,
-                        width_i   :: Int,
+                        height    :: {-# UNPACK #-} !CInt,
+                        width     :: {-# UNPACK #-} !CInt,
+                        height_i  :: {-# UNPACK #-} !Int,
+                        width_i   :: {-# UNPACK #-} !Int,
                         center    :: Point V2 CInt
                       }
 

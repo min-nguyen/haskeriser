@@ -14,6 +14,7 @@ import Data.Char as Char
 import Data.List
 import Data.Matrix as Matrix
 import Data.Cross
+import qualified Data.Vector as V
 import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
@@ -24,10 +25,10 @@ import Matrix
 import Data.List.Split
 import TGA
 
-data Model = Model {verts       :: [(V3 Double, Int)],
-                    faces       :: [[(V3 Integer, Int)]],
-                    norms       :: [(V3 Double, Int)],
-                    uvs         :: [(V2 Double, Int)],
+data Model = Model {verts       :: V.Vector (V3 Double, Int),
+                    faces       :: V.Vector ([(V3 Integer, Int)]),
+                    norms       :: V.Vector (V3 Double, Int),
+                    uvs         :: V.Vector (V2 Double, Int),
                     diffuse_map :: TGA_Header,
                     nfaces :: Int,
                     nverts :: Int}
@@ -57,10 +58,10 @@ load_model = do
 
         nats = 1 : map (+1) (nats)
 
-        faces'' = zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]])
-        verts'' = zipWith (\f i -> (f, i)) verts (nats :: [Int])
-        norms'' = zipWith (\f i -> (f, i)) norms (nats :: [Int])
-        uvs'' = zipWith (\f i -> (f, i)) uvs (nats :: [Int])
+        faces'' = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(V3 Integer, Int)])
+        verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (V3 Double, Int)
+        norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (V3 Double, Int)
+        uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (V2 Double, Int)
 
     -- print $ length faces''
     -- print $ length verts''
@@ -75,14 +76,14 @@ load_model = do
 
 
 model_face :: Model -> Int -> [Integer]
-model_face model ind = [x | face_v3 <- ((faces model) !! ind), let V3 x y z = fst face_v3]
+model_face model ind = [x | face_v3 <- ((faces model) V.! ind), let V3 x y z = fst face_v3]
 
 model_vert :: Model -> Int -> V3 Double
-model_vert model ind = fst $ (verts model) !! ind
+model_vert model ind = fst $ (verts model) V.! ind
 
 model_uv :: Model -> Int -> Int -> V2 Int
-model_uv model iface nvert = let V3 x y z = fst $ ((faces model) !! iface) !! nvert
-                                 V2 x' y' = fst $ (uvs model) !! ( fromIntegral y)
+model_uv model iface nvert = let V3 x y z = fst $ ((faces model) V.! iface) !! nvert
+                                 V2 x' y' = fst $ (uvs model) V.! ( fromIntegral y)
                              in  V2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
 valid_obj_num :: String  -> Bool

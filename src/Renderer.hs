@@ -23,7 +23,7 @@ import Light
 import Camera
 import Control.Lens
 import Geometry
-
+import qualified Data.Vector as V
 
 
 to_double :: Int -> Double
@@ -32,7 +32,7 @@ to_double x = fromIntegral x
 --fromMatV4toV3 (viewport_mat * projection_mat *
 draw_loop :: Screen -> Model -> Light -> Camera -> IO()
 draw_loop screen model light camera = do
-    let zbuffer = replicate ((width_i screen)*(height_i screen)) (-100000)
+    let zbuffer = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0))) :: V.Vector Double
         projection_mat = cam_projection_matrix camera
         viewport_mat = viewport_matrix ((fromIntegral $ width_i screen)/8.0) ((fromIntegral $ height_i screen)/8.0) ((fromIntegral $ width_i screen)*0.75) ((fromIntegral $ height_i screen)*0.75)
     
@@ -69,7 +69,7 @@ draw_loop screen model light camera = do
     return ()
 
 -- #             Screen ->   Projected 2D Triangle Vertices   ->   UV Coordinates Z-Buffer  -> Updated Z-Buffer                     
-draw_triangle :: Screen ->  (V3 Int, V3 Int, V3 Int) ->  (V2 Int, V2 Int, V2 Int) -> [Double] -> IO [Double]
+draw_triangle :: Screen ->  (V3 Int, V3 Int, V3 Int) ->  (V2 Int, V2 Int, V2 Int) -> (V.Vector Double) -> IO (V.Vector Double)
 draw_triangle screen screen_vertices uv_vertices zbuffer  = do
     let ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)) = screen_vertices
  
@@ -103,7 +103,7 @@ draw_triangle screen screen_vertices uv_vertices zbuffer  = do
         
 -- print $ (second_half, segment_height, alpha, beta, triangle_height, i, v0, v1 ,v2)
 
-draw_help :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> [Double] -> Screen -> IO [Double]
+draw_help :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (V.Vector Double) -> Screen -> IO (V.Vector Double)
 draw_help v_list zbuffer screen = case v_list of (x:xs) ->  do
                                                         let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x    
                                                         -- Set loop from vA.x to vB.x 
@@ -113,7 +113,7 @@ draw_help v_list zbuffer screen = case v_list of (x:xs) ->  do
                                                  []     -> return zbuffer
 
 
-draw_helper :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> Screen -> [Double] -> IO [Double]
+draw_helper :: [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> Screen -> (V.Vector Double) -> IO (V.Vector Double)
 draw_helper v_list (start, end) index screen zbuffer =
                                     if index > end
                                         then return zbuffer
@@ -129,10 +129,10 @@ draw_helper v_list (start, end) index screen zbuffer =
                                                                         -- Set idx
                                                                             idx = px + py * (width_i screen)
                                                                     
-                                                                        if (zbuffer !! (idx)) < (to_double pz)
+                                                                        if (zbuffer V.! (idx)) < (to_double pz)
                                                                             then ( do
                                                                                 let zbuffer' = replaceAt (to_double pz) idx zbuffer
-                                                                                sdl_put_pixel screen (V2 (fromIntegral $ px) ( fromIntegral $  py)) (get_color Blue)
+                                                                                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (get_color Blue)
                                                                                 draw_helper vs (start,end) (index + 1) screen zbuffer')
                                                                             else ( do
                                                                             

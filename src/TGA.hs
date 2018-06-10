@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE BangPatterns #-}
 module TGA where
 
 
@@ -35,8 +35,8 @@ import Data.Vector.Storable as V
 --                                 imagedescriptor :: Char
 --                             }
 
-data TGA_Header = TGA_Header {  width :: Int,
-								height :: Int,
+data TGA_Header = TGA_Header {  width   :: {-# UNPACK #-} !Int,
+								height  :: {-# UNPACK #-} !Int,
 								imgdata :: V.Vector (PixelBaseComponent PixelRGB8),
                                 bitsperpixel :: Int
                             }
