@@ -62,13 +62,13 @@ load_model = do
         norms'' = zipWith (\f i -> (f, i)) norms (nats :: [Int])
         uvs'' = zipWith (\f i -> (f, i)) uvs (nats :: [Int])
 
-    print $ length faces''
-    print $ length verts''
-    print $ length norms''
-    print $ length uvs''
-    sequence $ map print verts''
-    outh <- openFile "output.txt" WriteMode
-    sequence $ map (\s -> hPutStrLn outh (show s) ) verts''
+    -- print $ length faces''
+    -- print $ length verts''
+    -- print $ length norms''
+    -- print $ length uvs''
+    -- sequence $ map print verts''
+    -- outh <- openFile "output.txt" WriteMode
+    -- sequence $ map (\s -> hPutStrLn outh (show s) ) verts''
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"    
     return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')
 
