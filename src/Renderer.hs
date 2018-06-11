@@ -29,28 +29,33 @@ import Util
 
 draw_loop :: Screen -> Model -> Light -> Camera -> IO()
 draw_loop screen model light camera = do
-    let zbuffer = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0))) :: V.Vector Double
+    let zbuffer = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, V4 255 255 255 255))) :: V.Vector (Double, V4 Word8)
         projection_mat = cam_projection_matrix camera
         viewport_mat = viewport_matrix ((fromIntegral $ width_i screen)/8.0) ((fromIntegral $ height_i screen)/8.0) ((fromIntegral $ width_i screen)*0.75) ((fromIntegral $ height_i screen)*0.75)
-    
+        eye = V3 1 1 3
+        center = V3 0 0 0
+        modelview_mat = lookat_matrix eye center up
     --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
     screen_world_coords <- mapM (\ind -> do 
                                    
                                     let face = model_face model ind 
                                         (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert model (fromIntegral $ (face !! i))) (0,1,2)
                            
-                                    let screen_coord (V3 a b c) = (( fromMatV4toV3 ( viewport_mat * projection_mat * (fromV3toMatV4 (V3 a b c)) )) :: (V3 Double))
+                                    let screen_coord (V3 a b c) = (( fromMatV4toV3 ( viewport_mat * projection_mat * modelview_mat * (fromV3toMatV4 (V3 a b c)) )) :: (V3 Double))
                                         (s_v0, s_v1, s_v2) = mapTuple3 (\v -> screen_coord v)  (w_v0, w_v1, w_v2)
 
                                     return $ (((s_v0, s_v1, s_v2),  (w_v0, w_v1, w_v2)) :: ((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double)))) ([0 .. (nfaces model) - 1] :: [Int])
 
-    process_triangles (0::Int) zbuffer screen_world_coords light model screen
+    zbuffer' <- process_triangles (0::Int) zbuffer screen_world_coords light model screen
+    render_screen screen zbuffer'
+
     return ()
 
 
-process_triangles :: Int -> V.Vector Double -> [((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double))] -> Light -> Model -> Screen -> IO ()
+process_triangles :: Int -> V.Vector (Double, V4 Word8) -> [((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double))] -> Light -> Model -> Screen ->  IO (V.Vector (Double, V4 Word8))
 process_triangles idx zbuff coords light model screen = go 
-                                            where go = case coords of   (x:xs) -> (\(screen_v, world_v) -> do
+                                            where go = do
+                                                     case coords of (x:xs) -> (\(screen_v, world_v) -> do
                                                                                 print $ length xs
                                                                                 let (world_0, world_1, world_2) = world_v
                                                                                     norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
@@ -65,10 +70,10 @@ process_triangles idx zbuff coords light model screen = go
                                                                                         process_triangles (idx + 1) zbuff' xs light model screen) 
                                                                                     else 
                                                                                         process_triangles (idx + 1) zbuff  xs light model screen) x
-                                                                        empty -> return ()
+                                                                    empty -> return zbuff
 
 -- #             Screen ->   Projected 2D Triangle Vertices   ->   UV Coordinates Z-Buffer  -> Updated Z-Buffer                     
-draw_triangle :: Screen -> Model -> (V3 Int, V3 Int, V3 Int) ->  (V2 Int, V2 Int, V2 Int) -> (V.Vector Double) -> IO (V.Vector Double)
+draw_triangle :: Screen -> Model -> (V3 Int, V3 Int, V3 Int) ->  (V2 Int, V2 Int, V2 Int) -> V.Vector (Double, V4 Word8) -> IO (V.Vector (Double, V4 Word8))
 draw_triangle screen model screen_vertices uv_vertices zbuffer  = do
     let ((V3 v0x v0y v0z, V3 v1x v1y v1z, V3 v2x v2y v2z)) = screen_vertices
  
@@ -100,7 +105,7 @@ draw_triangle screen model screen_vertices uv_vertices zbuffer  = do
             return zbuffer'
         )
     
-process_triangle_rows :: Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (V.Vector Double) -> IO (V.Vector Double)
+process_triangle_rows :: Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> V.Vector (Double, V4 Word8) -> IO (V.Vector (Double, V4 Word8))
 process_triangle_rows screen model v_list zbuffer = go 
                                     where go = case v_list of   (x:xs) ->  do
                                                                         let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x    
@@ -111,7 +116,7 @@ process_triangle_rows screen model v_list zbuffer = go
                                                                 []     -> return zbuffer
 
 
-draw_triangle_row ::  Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> (V.Vector Double) -> IO (V.Vector Double)
+draw_triangle_row ::  Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> V.Vector (Double, V4 Word8) -> IO (V.Vector (Double, V4 Word8))
 draw_triangle_row screen model v_list (start, end) index zbuffer = go
                                      where go =  if index > end
                                                      then return zbuffer
@@ -126,19 +131,26 @@ draw_triangle_row screen model v_list (start, end) index zbuffer = go
                                                                                         (V2 pu pv) = uvA + (map_V2 floor (mul_V2_Num (map_V2 to_double (uvB - uvA)) ( phi)))
                                                                                     -- Set idx
                                                                                         idx = px + py * (width_i screen)
-                                                                                
-                                                                                    if (zbuffer V.! (idx)) < (to_double pz)
+
+                                                                                    if (fst (zbuffer V.! (idx)) < (to_double pz) && px < width_i screen && py < height_i screen && px >= 0 && py >=0)
                                                                                         then ( do
-                                                                                            let zbuffer' = replaceAt (to_double pz) idx zbuffer
-                                                                                                rgba      = model_diffuse model (V2 pu pv)
-                                                                                            sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)
+                                                                                            let rgba      = model_diffuse model (V2 pu pv)
+                                                                                                zbuffer'  = replaceAt (to_double pz, rgba) idx zbuffer
+                                                                                                
+                                                                                           
                                                                                             draw_triangle_row screen model vs (start,end) (index + 1) zbuffer')
                                                                                         else ( do
                                                                                         
                                                                                             draw_triangle_row screen model vs (start,end) (index + 1) zbuffer)
                                                                             [] -> return zbuffer
                                    
-       
+render_screen :: Screen ->  V.Vector (Double, V4 Word8) -> IO [()]
+render_screen screen zbuffer =  do
+                mapM (\index -> do 
+                                let px = index `mod` (width_i screen)
+                                    py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
+                                    rgba = snd $ zbuffer V.! index
+                                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
 
 order_min_x :: (V3 Double, V3 Double) -> (V2 Double, V2 Double) -> ((V3 Double, V3 Double), (V2 Double, V2 Double))
 order_min_x (V3 vAx vAy vAz, V3 vBx vBy vBz) (V2 vAu vAv, V2 vBu vBv)

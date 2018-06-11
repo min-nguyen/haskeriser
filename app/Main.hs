@@ -28,21 +28,21 @@ loop draw_func model light camera = do
         let loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
                         let quit = SDL.QuitEvent `elem` events
-                        -- sdl_set_render_target (renderer screen) (Just $ texture screen)
+
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
                         draw_func screen model light camera 
                       
-                        -- sdl_set_render_target (renderer screen) Nothing
-                        -- sdl_render_texture (renderer screen) (texture screen) 0 Nothing (Just (fromIntegral 0)) (Just $ center screen) Nothing
                         SDL.present (renderer screen)
                         -- unless quit (loop')
         loop'
+        ----- One loop freeze ----
         let loop'' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
                         let quit = SDL.QuitEvent `elem` events
                         unless quit (loop'')
         loop''
+        --------------------------
         SDL.destroyWindow (window screen)
         SDL.quit
              
@@ -53,12 +53,3 @@ main = do
     light <- load_light
     loop draw_loop model light camera
     return ()
-
-
--- test1 :: Screen -> IO ()
--- test1 screen = do
---     let points = [V2 x y | x <- [0 .. 255], y <- [0 .. 255]]
---     let colors = [V4 r g 0 255 | r <- [0 .. 255], g <- [0 .. 255]]
---     sequence $ map (\(xy, color) -> sdl_put_pixel screen xy color) 
---                         (zip points colors)
---     return ()

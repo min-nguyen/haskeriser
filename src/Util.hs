@@ -39,7 +39,7 @@ mapTuple2 f (a1, a2) = (f a1, f a2)
 mapTuple3 :: (a -> b) -> (a, a, a) -> (b, b, b)
 mapTuple3 f (a1, a2, a3) = (f a1, f a2, f a3)
 
-replaceAt :: Double -> Int -> V.Vector Double -> V.Vector Double 
+replaceAt :: a -> Int -> V.Vector a -> V.Vector a 
 replaceAt newElement n array = V.take n array V.++  (newElement `V.cons` V.drop (n + 1) array)
 
 to_double :: Int -> Double
