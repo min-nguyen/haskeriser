@@ -21,17 +21,19 @@ import Model
 import Camera
 import TGA
 import Light
-
-loop :: (Screen -> Model -> Light -> Camera -> IO()) -> Model -> Light -> Camera -> IO()
-loop draw_func model light camera = do
+import Rasteriser
+import Shader
+loop :: (Rasteriser -> Shader -> IO()) -> Model -> Light -> Camera -> Shader -> IO()
+loop draw_func model light camera shader = do
         screen <- sdl_init
-        let loop' = do
+        let rasteriser = Rasteriser model screen camera light
+            loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
                         let quit = SDL.QuitEvent `elem` events
 
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
-                        draw_func screen model light camera 
+                        draw_func rasteriser shader
                       
                         SDL.present (renderer screen)
                         -- unless quit (loop')
@@ -51,5 +53,6 @@ main = do
     model <- load_model
     camera <- load_camera
     light <- load_light
-    loop draw_loop model light camera
+    let shader = load_shader
+    loop draw_loop model light camera shader
     return ()

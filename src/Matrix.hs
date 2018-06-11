@@ -91,3 +91,30 @@ mul_V3_Num (V3 x y z) n = V3 (x*n) (y*n) (z*n)
 
 mul_V2_Num :: (Num a) => V2 a -> a -> V2 a
 mul_V2_Num (V2 x y ) n = V2 (x*n) (y*n)
+
+x_V2 :: V2 a -> a
+x_V2 (V2 x y) = x
+
+y_V2 :: V2 a -> a
+y_V2 (V2 x y) = y
+
+x_V3 :: V3 a -> a
+x_V3 (V3 x y z) = x
+
+y_V3 :: V3 a -> a
+y_V3 (V3 x y z) = y
+
+z_V3 :: V3 a -> a
+z_V3 (V3 x y z) = z
+
+x_V4 :: V4 a -> a
+x_V4 (V4 x y z w) = x
+
+y_V4 :: V4 a -> a
+y_V4 (V4 x y z w) = y
+
+z_V4 :: V4 a -> a
+z_V4 (V4 x y z w) = z
+
+w_V4 :: V4 a -> a
+w_V4 (V4 x y z w) = w

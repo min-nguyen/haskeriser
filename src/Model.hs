@@ -28,6 +28,11 @@ import TGA
 import Util
 import Codec.Picture
 import Codec.Picture.Types
+import Camera
+import SDL_Aux
+import Light
+
+
 
 data Model = Model {verts       :: V.Vector (V3 Double, Int),
                     faces       :: V.Vector ([(V3 Integer, Int)]),
@@ -81,7 +86,7 @@ model_vert model ind = fst $ (verts model) V.! ind
 model_uv :: Model -> Int -> Int -> V2 Int
 model_uv model iface nvert = let V3 x y z = fst $ ((faces model) V.! iface) !! nvert
                                  V2 x' y' = fst $ (uvs model) V.! ( fromIntegral y)
-                             in  V2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
+                             in  V2  (floor (x' * (fromIntegral $ TGA.width $ diffuse_map model)))  (floor (y' * (fromIntegral $ TGA.height $ diffuse_map model))) ----- UPDATE THIS
 
 model_diffuse :: Model -> V2 Int -> V4 Word8
 model_diffuse model (V2 u v) = let  dm = diffuse_map model
