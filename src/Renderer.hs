@@ -18,11 +18,11 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import Matrix as Matrix
 import Debug.Trace
 import SDL_Aux
 import Triangle
-import Model
+import Matrix hiding ((!!))
+import qualified Matrix  as M ((!!))
 import Light
 import Camera
 import Control.Lens
@@ -33,6 +33,8 @@ import Data.List.Split
 import Rasteriser
 import Shader
 
+
+
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
     let zbuffer = load_zbuffer rasteriser
@@ -42,16 +44,16 @@ draw_loop rasteriser shader = do
                                         (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert (model rasteriser) (fromIntegral $ (face !! i))) (0,1,2)
                                         (s_v0, s_v1, s_v2) = mapTuple3 (\v -> vertex shader rasteriser v)  (w_v0, w_v1, w_v2)
 
-                                    return $ (((s_v0, s_v1, s_v2),  (w_v0, w_v1, w_v2)) :: ((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double)))) ([0 .. (nfaces (model rasteriser)) - 1] :: [Int])
+                                    return $ (V3 s_v0 s_v1 s_v2) :: V3 (V3 Double)) ([0 .. (nfaces (model rasteriser)) - 1] :: [Int])
 
-    render_screen (screen rasteriser) (process_triangles (0::Int) zbuffer screen_world_coords rasteriser)
+    -- render_screen (screen rasteriser) (process_triangles (0::Int) zbuffer screen_world_coords rasteriser)
 
     return ()
 
-process_triangles :: Int -> ZBuffer -> [((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double))] -> Rasteriser -> (V.Vector (Double, V4 Word8))
+process_triangles :: Int -> ZBuffer -> [ScreenCoords] -> Rasteriser -> ZBuffer
 process_triangles idx zbuff coords (Rasteriser model screen camera light ) = go 
                                             where go = 
-                                                     case coords of (x:xs) -> (\(screen_v, world_v) -> 
+                                                     case coords of (x:xs) -> (\(screen_v) -> 
                                                                                 
                                                                                 let (world_0, world_1, world_2) = Debug.Trace.trace (show (length xs) ++ "/" ++ (show $ length $ faces model) ++ " left to process") world_v
                                                                                     norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
@@ -59,8 +61,8 @@ process_triangles idx zbuff coords (Rasteriser model screen camera light ) = go
                                                                                 in if (light_intensity > 0) 
                                                                                     then ( 
 
-                                                                                        let screen_v_ints = mapTuple3 (map_V3 floor) screen_v                        
-                                                                                            uv = mapTuple3 (model_uv model idx) ((0, 1, 2) :: (Int, Int, Int))
+                                                                                        let screen_v_ints = map_V3 (map_V3 floor) screen_v                        
+                                                                                            uv = map_V3 (model_uv model idx) ((0, 1, 2) :: (Int, Int, Int))
                                                                                             zbuff' = draw_triangle (Rasteriser model screen camera light ) screen_v_ints uv zbuff
                                                                                             
                                                                                         in process_triangles (idx + 1) zbuff' xs (Rasteriser model screen camera light )) 

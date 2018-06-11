@@ -22,7 +22,7 @@ import SDL (($=))
 import System.IO
 import qualified SDL
 import Control.Lens
-import Matrix
+
 import Data.List.Split
 import TGA
 import Util

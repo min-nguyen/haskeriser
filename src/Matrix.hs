@@ -118,3 +118,39 @@ z_V4 (V4 x y z w) = z
 
 w_V4 :: V4 a -> a
 w_V4 (V4 x y z w) = w
+
+
+class Selectable f where
+    (!!) :: f a -> Int -> a
+
+
+
+instance Selectable V2  where
+    (V2 x y) !! n  = case n of  0 -> x
+                                1 -> y
+
+instance Selectable V3  where
+    (V3 x y z) !! n  = case n of    0 -> x
+                                    1 -> y
+                                    2 -> z
+instance Selectable V4  where
+    (V4 x y z w) !! n  = case n of      0 -> x
+                                        1 -> y
+                                        2 -> z
+                                        3 -> w
+
+-- instance Selectable ((,,) f a) where
+--     (a, b, c) !! n  = case n of     0 -> a
+--                                     1 -> b
+--                                     2 -> c
+
+
+-- (!!) :: V3 a -> Int -> a
+-- (V3 x y z) !! n  = case n of  0 -> x
+--                               1 -> y
+--                               2 -> z
+-- (!!) :: V4 a -> Int -> a
+-- (V4 x y z w) !! n  = case n of  0 -> x
+--                                 1 -> y
+--                                 2 -> z
+--                                 3 -> w
