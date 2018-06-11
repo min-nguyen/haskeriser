@@ -21,22 +21,6 @@ import Control.Lens
 import Camera
 import qualified Data.Vector as V
 
-cam_projection_matrix :: Camera -> Matrix Double
-cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
-                                          0, 1, 0, 0,
-                                          0, 0, 1, 0,
-                                          0, 0, -1/z, 1]
-                            where V4 x y z w = position cam
-
-viewport_matrix :: Double -> Double -> Double -> Double -> Matrix Double
-viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
-                                        0,       h/2.0,     0,          y+h/2.0,
-                                        0,       0,         255/2.0,    255/2.0,
-                                        0,       0,         0,          1]
-
-clamp :: Double -> Double -> Double -> Double
-clamp x minval maxval = min (max x minval) maxval
-
 toMatV2 :: V2 Double -> Matrix Double
 toMatV2 (V2 a b) = fromList 2 1 [a, b]
 
@@ -98,10 +82,12 @@ norm_V3 :: V3 Double  -> V3 Double
 norm_V3 (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
                         in V3 (ax/magnitude) (ay/magnitude) (az/magnitude)
 
--- norm_V3I :: V3 Int  -> V3 Int
--- norm_V3I (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
---                         in V3 (ax/magnitude) (ay/magnitude) (az/magnitude)
-
 norm_V4 :: V4 Double  -> V4 Double
 norm_V4 (V4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))
                            in V4 (ax/magnitude) (ay/magnitude) (az/magnitude) (aw/magnitude)
+
+mul_V3_Num :: (Num a) => V3 a -> a -> V3 a
+mul_V3_Num (V3 x y z) n = V3 (x*n) (y*n) (z*n)
+
+mul_V2_Num :: (Num a) => V2 a -> a -> V2 a
+mul_V2_Num (V2 x y ) n = V2 (x*n) (y*n)

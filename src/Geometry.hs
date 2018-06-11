@@ -12,6 +12,7 @@ import SDL (($=))
 import qualified SDL
 import Data.Matrix as Matrix
 import Data.Cross
+import Camera
 
 -- # Triangle Vertices v0 v1 v2 -> Queried Point p -> Barycentric Coordinates
 barycentric :: (V2 Double, V2 Double, V2 Double) -> V2 Double -> V3 Double
@@ -22,8 +23,15 @@ barycentric (v0, v1, v2) p = if abs b2 < 1 then (V3 (-1) 1 1) else V3 (1 - (b0 +
                               V2 v1x v1y = v1 
                               V2 v2x v2y = v2
 
-mul_V3_Num :: (Num a) => V3 a -> a -> V3 a
-mul_V3_Num (V3 x y z) n = V3 (x*n) (y*n) (z*n)
+cam_projection_matrix :: Camera -> Matrix Double
+cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
+                                          0, 1, 0, 0,
+                                          0, 0, 1, 0,
+                                          0, 0, -1/z, 1]
+                            where V4 x y z w = position cam
 
-mul_V2_Num :: (Num a) => V2 a -> a -> V2 a
-mul_V2_Num (V2 x y ) n = V2 (x*n) (y*n)
+viewport_matrix :: Double -> Double -> Double -> Double -> Matrix Double
+viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
+                                        0,       h/2.0,     0,          y+h/2.0,
+                                        0,       0,         255/2.0,    255/2.0,
+                                        0,       0,         0,          1]

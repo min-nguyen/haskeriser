@@ -19,6 +19,10 @@ import qualified SDL
 import Matrix as Matrix
 import qualified Data.Vector as V
 
+
+clamp :: Double -> Double -> Double -> Double
+clamp x minval maxval = min (max x minval) maxval
+
 stringListToV3List :: [String] -> [V3 Double]
 stringListToV3List str = case str of (x:xs) -> let (a:b:c:_) = take 3 (str) in ((V3 (read a) (read b) (read c)):(stringListToV3List $ drop 3 str))
                                      [] -> []
