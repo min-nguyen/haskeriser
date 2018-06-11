@@ -50,3 +50,7 @@ map2 f fa = fmap (fmap f) fa
 
 map3 :: (Functor f) => (a -> b) -> f (f (f a)) -> f (f (f b))
 map3 f fa = fmap (fmap (fmap f)) fa
+
+
+reduce_zbuffer :: [V.Vector (Double, V4 Word8)] ->  (V.Vector (Double, V4 Word8))
+reduce_zbuffer zbuffers =  foldr (\veca vecb -> V.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (V.zip veca vecb) ) V.empty zbuffers

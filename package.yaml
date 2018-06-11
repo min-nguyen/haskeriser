@@ -39,6 +39,8 @@ dependencies:
 - binary
 - binary-bits
 - vector
+- monad-par
+- monad-control
 
 library:
   source-dirs: src
