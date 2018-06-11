@@ -15,6 +15,7 @@ import qualified SDL
 import Matrix as Matrix
 import SDL_Aux
 
+
 data Triangle = Triangle {  points  :: (V4 Double, V4 Double, V4 Double),
                             color   :: V4 Word8 }
 

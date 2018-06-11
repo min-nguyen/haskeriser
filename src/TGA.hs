@@ -38,7 +38,8 @@ import Data.Vector.Storable as V
 data TGA_Header = TGA_Header {  width   :: {-# UNPACK #-} !Int,
 								height  :: {-# UNPACK #-} !Int,
 								imgdata :: V.Vector (PixelBaseComponent PixelRGB8),
-                                bitsperpixel :: Int
+								bbp :: Int,
+								img    :: Image PixelRGB8
                             }
 				 | TGA_Error
 
@@ -48,11 +49,13 @@ read_tga filepath = do
 	
 	let contents = decodeTga bytestr
 	    s = getWord16be
-		
-	return $ case contents of 
-					Left s  -> TGA_Error
+
+	case contents of 
+					Left s  -> return TGA_Error
 					Right d -> (case d of
-						ImageRGB8  p' -> TGA_Header (imageWidth $   p')  (imageHeight $   p') ((imageData p'):: V.Vector (PixelBaseComponent PixelRGB8))  (8) 
+						ImageRGB8  p' -> do
+									return $ TGA_Header (imageWidth $   p')  (imageHeight $   p') ((imageData p'):: V.Vector (PixelBaseComponent PixelRGB8))  (8) p'
+						
 						-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
-						_ -> TGA_Error)
+						_ -> return TGA_Error)
 

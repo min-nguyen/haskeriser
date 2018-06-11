@@ -37,9 +37,6 @@ viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
 clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval
 
-replaceAt :: Double -> Int -> V.Vector Double -> V.Vector Double 
-replaceAt newElement n array = V.take n array V.++  (newElement `V.cons` V.drop (n + 1) array)
-
 toMatV2 :: V2 Double -> Matrix Double
 toMatV2 (V2 a b) = fromList 2 1 [a, b]
 
@@ -108,19 +105,3 @@ norm_V3 (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
 norm_V4 :: V4 Double  -> V4 Double
 norm_V4 (V4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))
                            in V4 (ax/magnitude) (ay/magnitude) (az/magnitude) (aw/magnitude)
-
-stringListToV3List :: [String] -> [V3 Double]
-stringListToV3List str = case str of (x:xs) -> let (a:b:c:_) = take 3 (str) in ((V3 (read a) (read b) (read c)):(stringListToV3List $ drop 3 str))
-                                     [] -> []
-
-stringListToV2List :: [[String]] -> [V2 Double]
-stringListToV2List str = [(V2 (read a) (read b) ) | (a:b:_) <- (str) ]
-
-stringListToV3ListI :: [[String]] -> [V3 Integer]
-stringListToV3ListI str = [(V3 (read a) (read b) (read c) ) | (a:b:c:_) <- (str) ]
-
-mapTuple2 :: (a -> b) -> (a, a) -> (b, b)
-mapTuple2 f (a1, a2) = (f a1, f a2)
-
-mapTuple3 :: (a -> b) -> (a, a, a) -> (b, b, b)
-mapTuple3 f (a1, a2, a3) = (f a1, f a2, f a3)
