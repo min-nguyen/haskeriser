@@ -96,23 +96,23 @@ draw_triangle screen model screen_vertices uv_vertices zbuffer  = do
                     return $ ((order_min_x_i (vA, vB) (uvA, uvB)  ), i)  ) ([0 .. (triangle_height - 1)] :: [Int])
 
             -- Send total results to draw_help
-            zbuffer' <- draw_help screen model v_list zbuffer
+            zbuffer' <- process_triangle_rows screen model v_list zbuffer
             return zbuffer'
         )
     
-draw_help :: Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (V.Vector Double) -> IO (V.Vector Double)
-draw_help screen model v_list zbuffer = go 
-                        where go = case v_list of   (x:xs) ->  do
-                                                            let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x    
-                                                            -- Set loop from vA.x to vB.x 
-                                                            zbuffer' <- draw_helper screen model v_list (vAx, vBx) vAx zbuffer 
+process_triangle_rows :: Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (V.Vector Double) -> IO (V.Vector Double)
+process_triangle_rows screen model v_list zbuffer = go 
+                                    where go = case v_list of   (x:xs) ->  do
+                                                                        let ((V3 vAx vAy vAz, V3 vBx vBy vBz), (V2 vAu vAv, V2 vBu vBv)) = fst x    
+                                                                        -- Set loop from vA.x to vB.x 
+                                                                        zbuffer' <- draw_triangle_row screen model v_list (vAx, vBx) vAx zbuffer 
 
-                                                            draw_help  screen model xs zbuffer'
-                                                    []     -> return zbuffer
+                                                                        process_triangle_rows  screen model xs zbuffer'
+                                                                []     -> return zbuffer
 
 
-draw_helper ::  Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> (V.Vector Double) -> IO (V.Vector Double)
-draw_helper screen model v_list (start, end) index zbuffer = go
+draw_triangle_row ::  Screen -> Model -> [(((V3 Int, V3 Int), (V2 Int, V2 Int)), Int)] -> (Int, Int) -> Int -> (V.Vector Double) -> IO (V.Vector Double)
+draw_triangle_row screen model v_list (start, end) index zbuffer = go
                                      where go =  if index > end
                                                      then return zbuffer
                                                      else case v_list of    (v:vs) ->      do
@@ -132,10 +132,10 @@ draw_helper screen model v_list (start, end) index zbuffer = go
                                                                                             let zbuffer' = replaceAt (to_double pz) idx zbuffer
                                                                                                 rgba      = model_diffuse model (V2 pu pv)
                                                                                             sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)
-                                                                                            draw_helper screen model vs (start,end) (index + 1) zbuffer')
+                                                                                            draw_triangle_row screen model vs (start,end) (index + 1) zbuffer')
                                                                                         else ( do
                                                                                         
-                                                                                            draw_helper screen model vs (start,end) (index + 1) zbuffer)
+                                                                                            draw_triangle_row screen model vs (start,end) (index + 1) zbuffer)
                                                                             [] -> return zbuffer
                                    
        
