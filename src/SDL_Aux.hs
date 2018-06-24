@@ -15,40 +15,27 @@ import SDL.Vect
 import Data.Word8
 import SDL (($=))
 import qualified SDL
-import Data.Vec
+import qualified Data.Vec as Vec (map)
+import Data.Vec as Vec hiding (map)
 import qualified Data.Vector.Storable as V
-
-screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (800, 800)
-
--- # SDL.Texture, (Width, Height)
-data Texture = Texture SDL.Texture (Vec2 CInt)
--- # Screen
-data Screen = Screen  { window    :: SDL.Window,
-                        renderer  :: SDL.Renderer,
-                        texture   :: Texture,
-                        height    :: {-# UNPACK #-} !CInt,
-                        width     :: {-# UNPACK #-} !CInt,
-                        height_i  :: {-# UNPACK #-} !Int,
-                        width_i   :: {-# UNPACK #-} !Int,
-                        center    :: Point Vec2 CInt
-                      }
-
+import Types
                       
-sdl_draw_line :: Screen -> Vec2 CInt -> Vec2 CInt -> Vec4 Word8 -> IO ()
-sdl_draw_line screen xy1 xy2 (Vec4 r g b a) = do
-    SDL.rendererDrawColor (renderer screen) $= Vec4 r g b a
+sdl_draw_line :: Screen -> V2 CInt -> V2 CInt -> V4 Word8 -> IO ()
+sdl_draw_line screen xy1 xy2 rgba = do
+    let V4 r g b a =  rgba
+    SDL.rendererDrawColor (renderer screen) $= V4 r g b a
     SDL.drawLine (renderer screen) (P xy1) (P xy2)                   
 
-sdl_put_pixel :: Screen -> Vec2 CInt -> Vec4 Word8 -> IO ()
-sdl_put_pixel screen xy (Vec4 r g b a) = do
-    SDL.rendererDrawColor (renderer screen) $= Vec4 r g b a
+sdl_put_pixel :: Screen -> V2 CInt -> V4 Word8 -> IO ()
+sdl_put_pixel screen xy rgba = do
+    let V4 r g b a =  rgba
+    SDL.rendererDrawColor (renderer screen) $= V4 r g b a
     SDL.drawPoint (renderer screen) (P xy)
 
-sdl_create_blank :: SDL.Renderer -> Vec2 CInt -> SDL.TextureAccess -> IO Texture
+sdl_create_blank :: SDL.Renderer -> V2 CInt -> SDL.TextureAccess -> IO Texture
 sdl_create_blank r sz access = Texture <$> SDL.createTexture r SDL.RGBA8888 access sz <*> pure sz
 
-sdl_render_texture :: SDL.Renderer -> Texture -> Point Vec2 CInt -> Maybe (SDL.Rectangle CInt) -> Maybe CDouble -> Maybe (Point Vec2 CInt) -> Maybe (Vec2 Bool) -> IO ()
+sdl_render_texture :: SDL.Renderer -> Texture -> Point V2 CInt -> Maybe (SDL.Rectangle CInt) -> Maybe CDouble -> Maybe (Point V2 CInt) -> Maybe (V2 Bool) -> IO ()
 sdl_render_texture r (Texture t size) xy clip theta center flips =
   let dstSize =
         maybe size (\(SDL.Rectangle _ size') -> size') clip
@@ -76,7 +63,7 @@ sdl_init = do
   window <-
     SDL.createWindow
       "Haskerizer"
-      SDL.defaultWindow {SDL.windowInitialSize = Vec2 screenWidth screenHeight}
+      SDL.defaultWindow {SDL.windowInitialSize = V2 screenWidth screenHeight}
   SDL.showWindow window
 
   renderer <-
@@ -88,11 +75,10 @@ sdl_init = do
         , SDL.rendererTargetTexture = False
         }
 
-  SDL.rendererDrawColor renderer $= Vec4 maxBound maxBound maxBound maxBound
+  SDL.rendererDrawColor renderer $= V4 maxBound maxBound maxBound maxBound
 
-  targetTexture <- sdl_create_blank renderer (Vec2 screenWidth screenHeight) SDL.TextureAccessTarget
-  let screenCenter = P (Vec2 (screenWidth `div` 2) (screenHeight `div` 2))
-  return $ Screen window renderer targetTexture screenHeight screenWidth (fromIntegral $ toInteger $ screenHeight) (fromIntegral $ toInteger $ screenWidth) screenCenter
+  targetTexture <- sdl_create_blank renderer (V2 screenWidth screenHeight) SDL.TextureAccessTarget
+  return $ Screen window renderer targetTexture screenHeight screenWidth (fromIntegral $ toInteger $ screenHeight) (fromIntegral $ toInteger $ screenWidth) 
 
 
 sdl_noquit :: IO () -> IO ()

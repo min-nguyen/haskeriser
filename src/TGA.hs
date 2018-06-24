@@ -21,28 +21,7 @@ import Codec.Picture
 import Codec.Picture.Types
 import Data.Vector.Storable as V
 import Data.Vec
-
--- data TGA_Header_t = TGA_Header_t {  idlength :: Char,
---                                 colormaptype :: Char,
---                                 datatypecode :: Char,
---                                 colormaporigin :: CShort,
---                                 colormaplength :: CShort,
---                                 colormapdepth :: Char,
---                                 x_origin :: CShort,
---                                 y_origin :: CShort,
---                                 width :: CShort, --17
---                                 height :: CShort,
---                                 bitsperpixel :: Char,
---                                 imagedescriptor :: Char
---                             }
-
-data TGA_Header = TGA_Header {  width   :: {-# UNPACK #-} !Int,
-								height  :: {-# UNPACK #-} !Int,
-								imgdata :: V.Vector (PixelBaseComponent PixelRGB8),
-								bbp :: Int,
-								img    :: Image PixelRGB8
-                            }
-				 | TGA_Error
+import Types
 
 read_tga :: String -> IO TGA_Header
 read_tga filepath = do

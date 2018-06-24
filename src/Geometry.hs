@@ -14,6 +14,7 @@ import Data.Vec
 import Data.Cross
 import Camera
 import Matrix
+import Types
 
 -- # Triangle Vertices v0 v1 Vec2 -> Queried Point p -> Barycentric Coordinates
 barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
@@ -24,14 +25,12 @@ barycentric (v0, v1, Vec2) p = if abs b2 < 1 then (Vec3 (-1) 1 1) else Vec3 (1 -
                               Vec2 v1x v1y = v1 
                               Vec2 Vec2x Vec2y = Vec2
 
-cam_projection_matrix :: Camera -> Matrix Double
-cam_projection_matrix cam = fromList 4 4 [1, 0, 0, 0,
-                                          0, 1, 0, 0,
-                                          0, 0, 1, 0,
-                                          0, 0, -1/z, 1]
-                            where Vec4 x y z w = position cam
+projection_matrix :: Camera -> Vec4 (Vec4 Double)
+projection_matrix cam = set n3 (fromList [0, 0, -1/z, 1]) identity
+                        where Vec4 x y z w = position cam
 
-viewport_matrix :: Double -> Double -> Double -> Double -> Matrix Double
+
+viewport_matrix :: Double -> Double -> Double -> Double -> Vec4 (Vec4 Double)
 viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
                                         0,       h/2.0,     0,          y+h/2.0,
                                         0,       0,         255/2.0,    255/2.0,
@@ -39,7 +38,7 @@ viewport_matrix x y w h = fromList 4 4 [w/2.0,   0,         0,          x+w/2.0,
 
 
 --                 EYE          CENTER        UP                                     
-lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Matrix Double
+lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Vec4 (Vec4 Double)
 lookat_matrix eye center up = let   Vec3 x1 y1 z1 = norm_Vec3 $ eye - center
                                     Vec3 x2 y2 z2 = norm_Vec3 $ or_Vec3 up (Vec3 x1 y1 z1)
                                     Vec3 x3 y3 z3 = norm_Vec3 $ or_Vec3 (Vec3 x1 y1 z1) (Vec3 x2 y2 z2)

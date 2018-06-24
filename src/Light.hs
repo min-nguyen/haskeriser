@@ -20,10 +20,8 @@ import qualified SDL
 import SDL_Aux
 import Control.Lens
 import Data.List.Split
-import Data.Vec
-
-data Light = Light {direction   :: Vec3 Double}
-
+import Data.Vec as Vec
+import Types
 
 load_light :: IO Light
-load_light = return $ Light (Vec3 0 0 (-1))
+load_light = return $ Light (Vec.fromList [0, 0, (-1)])

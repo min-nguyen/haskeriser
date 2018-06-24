@@ -19,7 +19,8 @@ import qualified SDL
 import Matrix as Matrix
 import qualified Data.Vector as V
 import Data.Vec
-
+import Codec.Picture
+import Codec.Picture.Types
 
 clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval

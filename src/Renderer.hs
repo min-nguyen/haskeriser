@@ -24,7 +24,6 @@ import SDL_Aux
 import Triangle
 import Matrix hiding ((!!))
 import qualified Matrix as M ((!!))
-import Data.Matrix as Matrix
 import Light
 import Camera
 import Control.Lens
@@ -40,9 +39,11 @@ import Model
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
     let (Rasteriser model screen camera light) = rasteriser
-        zbuffer = load_zbuffer rasteriser
+        zbuffer         = load_zbuffer rasteriser
+        shadowbuffer    = load_shadowbuffer rasteriser
+
     --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
-    -- render_screen (screen rasteriser) (process_triangles (0::Int) zbuffer screen_world_coords rasteriser)
+    
     let zbuff' = process_triangles zbuffer rasteriser shader 0
     render_screen (screen) zbuff'
     return ()

@@ -18,21 +18,7 @@ import Geometry
 import Data.Word8
 import qualified Data.Vector as V
 import Data.Vec
-
-data Rasteriser = Rasteriser {  model       :: Model,
-                                screen      :: Screen,
-                                camera      :: Camera,
-                                light       :: Light}
-
-data Shader     = Shader    {   uniform_M       :: Vec4 (Vec4 Double),
-                                uniform_MIT     :: Vec4 (Vec4 Double),
-                                uniform_Mshadow :: Vec4 (Vec4 Double),
-                                varying_uv      :: Vec2 (Vec3 Double),
-                                varying_tri     :: Vec3 (Vec3 Double) }
-
-type ZBuffer = V.Vector (Double, Vec4 Word8)
-
-type ScreenCoords = Vec3 (Vec3 Int) 
+import Types
 
 -- class IShader a where 
 --     vertex :: a -> Rasteriser  -> V3 Double -> V3 Double

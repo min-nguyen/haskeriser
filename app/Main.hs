@@ -51,7 +51,7 @@ loop draw_func model light camera shader = do
              
 main :: IO ()
 main = do
-    -- model <- load_model
+    model <- load_model
     -- camera <- load_camera
     -- light <- load_light
     -- let shader = load_shader

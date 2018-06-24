@@ -25,6 +25,11 @@ import Data.Vec
 load_zbuffer :: Rasteriser -> V.Vector (Double, Vec4 Word8)
 load_zbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, Vec4 255 255 255 255))) 
 
+load_shadowbuffer :: Rasteriser -> V.Vector (Double, Vec4 Word8)
+load_shadowbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, Vec4 255 255 255 255))) 
+
+
+
 
 -- #             Screen ->   Projected 2D Triangle Vertices   ->   UV Coordinates Z-Buffer  -> Updated Z-Buffer                     
 draw_triangle :: Rasteriser->  Vec3 (Vec3 Int) ->  Vec3 (Vec2 Int) -> ZBuffer ->  ZBuffer

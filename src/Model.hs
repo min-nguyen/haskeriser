@@ -31,16 +31,8 @@ import Codec.Picture.Types
 import Camera
 import SDL_Aux
 import Light
+import Types
 
-
-
-data Model = Model {verts       :: V.Vector (Vec3 Double, Int),
-                    faces       :: V.Vector ([(Vec3 Integer, Int)]),
-                    norms       :: V.Vector (Vec3 Double, Int),
-                    uvs         :: V.Vector (Vec2 Double, Int),
-                    diffuse_map :: TGA_Header,
-                    nfaces :: Int,
-                    nverts :: Int}
 
 load_model :: IO Model
 load_model = do
