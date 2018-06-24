@@ -20,7 +20,13 @@ import SDL_Aux
 import Control.Lens
 import Camera
 import qualified Data.Vector as V
-import Data.Vec
+import Data.Vec as Vec
+import Util
+
+fromVec3 :: Vec3 a -> (a,a,a)
+fromVec3 as  = listToTuple3 $ Vec.toList as
+
+
 
 -- toMatVec2 :: Vec2 Double -> Matrix Double
 -- toMatVec2 (Vec2 a b) = fromList 2 1 [a, b]
