@@ -23,11 +23,6 @@ import qualified Data.Vector as V
 import Data.Vec as Vec
 import Util
 
-fromVec3 :: Vec3 a -> (a,a,a)
-fromVec3 as  = listToTuple3 $ Vec.toList as
-
-
-
 -- toMatVec2 :: Vec2 Double -> Matrix Double
 -- toMatVec2 (Vec2 a b) = fromList 2 1 [a, b]
 
@@ -76,8 +71,10 @@ fromVec3 as  = listToTuple3 $ Vec.toList as
 -- fromMatVec4sq m = let [va, vb, vc, vd] = map (\[x, y, z, w] -> Vec4 x y z w) $ toLists m
 --                 in (va, vb, vc, vd)
 
--- or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
--- or_Vec3 (Vec3 ax ay az) (Vec3 bx by bz) = Vec3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
+or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
+or_Vec3 (a) (b) = toVec3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
+            where (ax, ay, az) = fromVec3 a
+                  (bx, by, bz) = fromVec3 b
 
 -- map_Vec2 :: (a -> b) -> Vec2 a -> Vec2 b
 -- map_Vec2 f (Vec2 x y ) = Vec2 (f x) (f y)
