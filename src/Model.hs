@@ -72,8 +72,8 @@ load_model = do
 model_face :: Model -> Int -> [Integer]
 model_face model ind = [x | face_Vec3 <- ((faces model) V.! ind), let  (x, y, z) = fromVec3 (fst face_Vec3)]
 
-model_vert :: Model -> Int -> Vec.Vec3 Double
-model_vert model ind = fst $ (verts model) V.! ind
+model_vert :: Model -> Int -> Int -> Vec.Vec3 Double
+model_vert model iface nvert  = fst $ (verts model) V.!  ( fromIntegral $ Vec.getElem 0 $ fst ( (faces model V.! iface) !! nvert))
 
 model_uv :: Model -> Int -> Int -> Vec.Vec2 Int
 model_uv model iface nvert = let (x, y, z) = fromVec3 $ fst $ ((faces model) V.! iface) !! nvert

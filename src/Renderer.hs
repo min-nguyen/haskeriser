@@ -4,7 +4,8 @@ module Renderer
     where
 
 import Prelude hiding (any, mapM_)
-import Data.Vec
+import Data.Vec as Vec hiding (take, drop, foldr, map, length)
+import qualified Data.Vec as Vec (take, drop, foldr, map, length)
 import Control.Monad hiding (mapM_)
 import Control.Arrow ((***))
 import Control.Monad.Par
@@ -22,8 +23,7 @@ import qualified SDL
 import Debug.Trace
 import SDL_Aux
 import Triangle
-import Matrix hiding ((!!))
-import qualified Matrix as M ((!!))
+import Matrix 
 import Light
 import Camera
 import Control.Lens
@@ -34,7 +34,7 @@ import Data.List.Split
 import Rasteriser
 import Shader
 import Model
-
+import Types
 
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
@@ -60,22 +60,25 @@ process_triangles zbuff rasteriser shader iface = go
 process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> Matrix Double -> (ZBuffer, Shader)
 process_triangle zbuff rasteriser shader iface clipc = 
                         let (Rasteriser model screen camera light) = rasteriser
-                            pts = Matrix.transpose $ viewport_mat shader * clipc
-                            pts2 = (scaleMatrix (1/(Matrix.getElem 3 0 pts)) (colVector (getCol 0 pts)) ) <|> 
-                                    (scaleMatrix (1/(Matrix.getElem 3 1 pts)) (colVector (getCol 1 pts)) ) <|>  
-                                        (scaleMatrix (1/(Matrix.getElem 3 2 pts)) (colVector (getCol 2 pts)) )
+
+                            -- Acquire shader with new MVP matrices 
+                            (screen_coords, new_shader) =   ((project_shader camera) . 
+                                                            (viewport_shader screen_width/8 screen_height/8 screen_width * (3/4) screen_height * (3/4)) . 
+                                                            (lookat_shader (normalize direction light) center up) $ shader) :: (Vec4 Double, Shader)
+
+                        -- in 
                             ----------- VERTEX SHADER -----------
                             vertex_shader nthvert t_vertices t_shader = if iface > 2 then (t_vertices, t_shader)
-                                                                        else let (vertex', shader') = vertex_shade shader rasteriser iface nthvert
+                                                                        else let (vertex', shader') = vertex_shade shader model iface nthvert
                                                                              in  vertex_shader (nthvert + 1) (vertex' : t_vertices) shader'
 
-                            (triangle_vertices', shader') = vertex_shader 0 [] shader
-                            (triangle_vertices'', shader'') = (fromListToVec3 triangle_vertices', shader') :: ((Vec3 (Vec4 Double)), Shader)
+                            ([vertex_x, vertex_y, vertex_z], shader') = (vertex_shader 0 [] new_shader) ::  ([Vec4 Double], Shader)
+                            (triangle_vertices', shader'') = (Vec.fromList [vertex_x, vertex_y, vertex_z], shader') :: ((Vec3 (Vec4 Double)), Shader)
 
                             ----------- * TRIANGLE * -----------
                             -----------   SET BBOX -----------
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  ((triangle_vertices'' M.!! i ) M.!! 0), (minimum $ V.toList (getCol i pts2))  ) |  i <- [0,1,2]]
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  ((triangle_vertices'' M.!! i ) M.!! 0), (maximum $ V.toList (getCol i pts2))   ) |  i <- [0,1,2]]
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  ((triangle_vertices' M.!! i ) M.!! 0), (minimum $ V.toList (getCol i pts2))  ) |  i <- [0,1,2]]
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  ((triangle_vertices' M.!! i ) M.!! 0), (maximum $ V.toList (getCol i pts2))   ) |  i <- [0,1,2]]
                         
                             --------------------------------------
                             
@@ -99,7 +102,7 @@ render_screen screen zbuffer =  do
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
                                     rgba = snd $ zbuffer V.! index
-                                sdl_put_pixel screen (Vec2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
+                                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
 
 
 
@@ -127,3 +130,7 @@ render_screen screen zbuffer =  do
 --                 get d
 
 
+-- pts = Matrix.transpose $ viewport_mat shader * clipc
+-- pts2 = (scaleMatrix (1/(Matrix.getElem 3 0 pts)) (colVector (getCol 0 pts)) ) <|> 
+--         (scaleMatrix (1/(Matrix.getElem 3 1 pts)) (colVector (getCol 1 pts)) ) <|>  
+--             (scaleMatrix (1/(Matrix.getElem 3 2 pts)) (colVector (getCol 2 pts)) )

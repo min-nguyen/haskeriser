@@ -73,8 +73,8 @@ import Util
 
 or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
 or_Vec3 (a) (b) = toVec3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
-            where (ax, ay, az) = fromVec3 a
-                  (bx, by, bz) = fromVec3 b
+            where (ax, ay, az) = fromVec3D a
+                  (bx, by, bz) = fromVec3D b
 
 -- map_Vec2 :: (a -> b) -> Vec2 a -> Vec2 b
 -- map_Vec2 f (Vec2 x y ) = Vec2 (f x) (f y)
