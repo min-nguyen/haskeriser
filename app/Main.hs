@@ -13,7 +13,6 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import Matrix as Matrix
 import Triangle
 import SDLx
 import Renderer

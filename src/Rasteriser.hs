@@ -1,5 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+
+-- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+-- |                                                                        | -- 
+-- |                       RASTERIZING OPERATIONS                           | -- 
+-- |                                                                        | -- 
+-- |                                                                        | -- 
+--  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+
+
 module Rasteriser
     where
 
@@ -29,9 +38,6 @@ load_zbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate 
 
 load_shadowbuffer :: Rasteriser -> V.Vector (Double, Vec4 Word8)
 load_shadowbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
-
-
-
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
 draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int -> ZBuffer ->  (ZBuffer, Shader)

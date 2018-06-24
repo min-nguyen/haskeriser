@@ -25,6 +25,3 @@ get_color color = case color of
     Purple  -> Vec.fromList  [190, 37 ,  190 ,255]
     White   -> Vec.fromList  [190, 190 , 190 ,255]
 
--- scale_vec4 :: Vec4 Double -> Vec4 Double    
--- scale_vec4 Vec4 =  let (Vec4 x y z w) = Vec4 * (2/555) - (Vec4 1 1 1 1)
---                  in (Vec4 (-x) (-y) z 1)

@@ -4,6 +4,13 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE InstanceSigs #-}
 
+        -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+        -- |                                                                        | -- 
+        -- |                   Data Type & Instance Definitions                     | -- 
+        -- |                                                                        | -- 
+        -- |                                                                        | -- 
+        --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+
 module Types
     where
 
@@ -26,9 +33,9 @@ import Data.Vector.Storable as ST
 import Codec.Picture
 import Codec.Picture.Types
 
----- |‾| ---------------------------------------------------------------------------- |‾| ----
----- | |                       Data type & Instance Definitions                       | | ----
----- |_| ---------------------------------------------------------------------------- |_| ----
+
+
+
 
 data Model = Model {    
                         verts       :: V.Vector (Vec3 Double, Int),
@@ -98,14 +105,18 @@ data Triangle = Triangle {
 
 data Color = Red | Blue | Yellow | Green | White | Purple
 
+
+---- |‾| ---------------------------------------------------------------------------- |‾| ----
+---- | |                                                                              | | ----
+---- |_| ---------------------------------------------------------------------------- |_| ----
+
+
 type ZBuffer = V.Vector (Double, Vec4 Word8)
 
 type ScreenCoords = Vec3 (Vec3 Int) 
 
 screenWidth, screenHeight :: CInt
 (screenWidth, screenHeight) = (800, 800)
-
-
 
 get  :: Kernel s s
 get  = Kernel {runKernel = (\s -> (s, s)) }

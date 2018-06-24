@@ -2,6 +2,13 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+-- |                                                                        | -- 
+-- |                       RASTERIZER GEOMETRIC ALG                         | -- 
+-- |                                                                        | -- 
+-- |                                                                        | -- 
+--  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+
 module Geometry
     where
 
@@ -15,16 +22,6 @@ import Camera
 import Matrix
 import Types
 import Util
-
--- -- # Triangle Vertices v0 v1 Vec2 -> Queried Point p -> Barycentric Coordinates
--- barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
--- barycentric (v0, v1, v2) p = if (abs b2) < 0.025 then debug b2 (toVec3D (-1.0) 1.0 1.0) else (toVec3D (1.0 - (b0 + b1)/b2) (b1/b2) (b0/b2))
---                         where  (b0, b1, b2) = cross3(v2x - v0x, v1x - v0x, v0x - px) (v2y - v0y, v1y - v0y, v0y - py)
---                                (px , py ) = fromVec2D p 
---                                (v0x, v0y) = fromVec2D v0
---                                (v1x, v1y) = fromVec2D v1 
---                                (v2x, v2y) = fromVec2D v2
-
 
 barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
 barycentric (a, b, c) p = let v0 = b - a

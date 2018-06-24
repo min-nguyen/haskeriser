@@ -1,22 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+-- |                                                                        | -- 
+-- |                     	     SHADER FUNCTIONS                           | -- 
+-- |                                                                        | -- 
+-- |                                                                        | -- 
+--  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+
 module Shader
     where
 
-import Prelude
 import Prelude hiding (any, mapM_)
 import SDL (($=))
-import Debug.Trace as Trace
 import qualified SDL
+import Debug.Trace as Trace
 import Data.Cross
+import Data.Word8
+import Data.Vec as Vec hiding (foldr)
 import Camera
 import Matrix
 import Model
 import SDLx
 import Light
 import Geometry
-import Data.Word8
-import Data.Vec as Vec hiding (foldr)
 import Types
 import Util
 
