@@ -133,3 +133,12 @@ multms4 m s = let vs = Vec.toList m
 
 reduce_zbuffer :: [V.Vector (Double, Vec.Vec4 Word8)] ->  (V.Vector (Double, Vec4 Word8))
 reduce_zbuffer zbuffers =  foldr (\veca vecb -> V.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (V.zip veca vecb) ) V.empty zbuffers
+
+vec2ToV2 :: Vec2 a -> V2 a
+vec2ToV2 (x:.y:.()) = V2 x y
+
+vec3ToV3 :: Vec3 a -> V3 a
+vec3ToV3 (x:.y:.z:.()) = V3 x y z
+
+vec4ToV4 :: Vec4 a -> V4 a
+vec4ToV4 (x:.y:.z:.w:.()) = V4 x y z w

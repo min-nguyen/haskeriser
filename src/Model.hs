@@ -62,7 +62,7 @@ load_model = do
         verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
-
+    print faces''
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"
     
     return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')

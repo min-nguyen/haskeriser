@@ -6,6 +6,7 @@ module Shader
 import Prelude
 import Prelude hiding (any, mapM_)
 import SDL (($=))
+import Debug.Trace as Trace
 import qualified SDL
 import Data.Cross
 import Camera
@@ -25,7 +26,7 @@ vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model
                                                 w = (1/(Vec.getElem 2 gl_Vertex)) :: Double
                                                 new_col =  multms3 (projectVec4to3D gl_Vertex) w
                                                 new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri shader) 
-                                            in (gl_Vertex, shader {varying_tri = new_varying_tri} )
+                                            in Trace.trace (show gl_Vertex) (gl_Vertex, shader {varying_tri = new_varying_tri} )
 
 fragment_shade :: Shader -> Model -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
 fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ multmv (varying_tri shader) bary_coords) :: (Double, Double, Double)
@@ -33,21 +34,17 @@ fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ 
                                                 in  (color , shader) 
 
 
--- class IShader a where 
---     vertex :: a -> Rasteriser  -> V3 Double -> V3 Double
---     fragment :: a -> Bool
---     load_shader :: a
+load_shader :: Shader
+load_shader = Shader {  modelview       = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        viewport        = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        projection      = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        uniform_M       = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        uniform_MIT     = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        uniform_Mshadow = toVec4 (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0) (toVec4 0 0 0 0),
+                        varying_uv      = toVec2 (toVec3 0 0 0) (toVec3 0 0 0),
+                        varying_tri     = toVec3 (toVec3 0 0 0) (toVec3 0 0 0) (toVec3 0 0 0)
+                    }
 
--- instance IShader Shader where
---         vertex shader (Rasteriser model screen camera  light ) (V3 a b c)  = 
---             let     projection_mat = cam_projection_matrix camera
---                     viewport_mat = viewport_matrix ((fromIntegral $ width_i screen)/8.0) ((fromIntegral $ height_i screen)/8.0) ((fromIntegral $ width_i screen)*0.75) ((fromIntegral $ height_i screen)*0.75)
---                     eye = V3 1 1 3
---                     center = V3 0 0 0
---                     modelview_mat = lookat_matrix eye center up
---             in (( fromMatV4toV3 ( viewport_mat * projection_mat * modelview_mat * (fromV3toMatV4 (V3 a b c)) )) :: (V3 Double))
---         fragment shader = True
---         load_shader = GouraudShader
 
 
 

@@ -23,6 +23,7 @@ import TGA
 import Light
 import Rasteriser
 import Shader
+import Types
 
 loop :: (Rasteriser -> Shader -> IO()) -> Model -> Light -> Camera -> Shader -> IO()
 loop draw_func model light camera shader = do
@@ -52,8 +53,8 @@ loop draw_func model light camera shader = do
 main :: IO ()
 main = do
     model <- load_model
-    -- camera <- load_camera
-    -- light <- load_light
-    -- let shader = load_shader
-    -- loop draw_loop model light camera shader
+    camera <- load_camera
+    light <- load_light
+    let shader = load_shader
+    loop draw_loop model light camera shader
     return ()

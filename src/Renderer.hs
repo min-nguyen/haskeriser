@@ -14,13 +14,13 @@ import Control.Monad.Trans.Class
 import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
+import Debug.Trace as Trace
 import Data.List
 import Data.Cross
 import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import Debug.Trace
 import SDL_Aux
 import Triangle
 import Matrix 
@@ -72,6 +72,8 @@ process_triangle zbuff rasteriser shader iface  =
                                                                         else let (vertex', shader') = vertex_shade shader model iface nthvert
                                                                              in  vertex_shader (nthvert + 1) (vertex' : t_vertices) shader'
 
+
+
                             ([vertex_x, vertex_y, vertex_z], shader') = (vertex_shader 0 [] new_shader) ::  ([Vec4 Double], Shader)
                             (screen_coordinates, shader'') = (Vec.fromList [vertex_x, vertex_y, vertex_z], shader') :: ((Vec3 (Vec4 Double)), Shader)
 
@@ -82,7 +84,10 @@ process_triangle zbuff rasteriser shader iface  =
                         
                             --------------------------------------
                             
-                            (updated_zbuff, updated_shader) = draw_triangle rasteriser shader screen_vertices (fst bboxmin, fst bboxmax) (snd bboxmin, snd bboxmax) (fst bboxmin) (snd bboxmin) zbuff
+                            (updated_zbuff, updated_shader) = draw_triangle rasteriser shader screen_coordinates    (floor $ fst bboxmin, floor $ fst bboxmax) 
+                                                                                                                    (floor $ snd bboxmin, floor $ snd bboxmax) 
+                                                                                                                    (floor $ fst bboxmin) 
+                                                                                                                    (floor $ snd bboxmin) zbuff
                                                 
 
 
@@ -93,7 +98,7 @@ render_screen screen zbuffer =  do
                 mapM (\index -> do 
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
-                                    rgba = snd $ zbuffer V.! index
+                                    rgba = vec4ToV4 $ snd $ zbuffer V.! index
                                 sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
 
 
