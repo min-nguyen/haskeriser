@@ -117,6 +117,10 @@ embedVec3to4D v3 = let (x,y,z) = fromVec3D v3 in toVec4D x y z 1
 projectVec4to3D :: Vec4 Double -> Vec3 Double
 projectVec4to3D v4 = let (x,y,z,w) = fromVec4D v4 in toVec3D x y z
 
+multms2 :: (Num a) => Vec2 a -> a -> Vec2 a
+multms2 m s = let vs = Vec.toList m
+              in Vec.fromList $ map (s*) vs
+
 
 multms3 :: (Num a) => Vec3 a -> a -> Vec3 a
 multms3 m s = let vs = Vec.toList m

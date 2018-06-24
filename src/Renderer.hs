@@ -62,9 +62,9 @@ process_triangle zbuff rasteriser shader iface  =
                         let (Rasteriser model screen camera light) = rasteriser
 
                             -- Acquire shader with new MVP matrices 
-                            (screen_coords, new_shader) =   ((project_shader camera) . 
-                                                            (viewport_shader screen_width/8 screen_height/8 screen_width * (3/4) screen_height * (3/4)) . 
-                                                            (lookat_shader (Vec.normalize $ direction light) center up) $ shader) :: (Vec4 Double, Shader)
+                            new_shader  =  (((project_shader camera) $
+                                             (viewport_shader ((to_double $ width_i screen)/8) ((to_double $ height_i screen)/8) ((to_double $ width_i screen) * (3/4)) ( (to_double $ height_i screen) * (3/4)) )  
+                                             (lookat_shader (Vec.normalize $ direction light) center up shader))) :: Shader
 
                         -- in 
                             ----------- VERTEX SHADER -----------
@@ -73,33 +73,20 @@ process_triangle zbuff rasteriser shader iface  =
                                                                              in  vertex_shader (nthvert + 1) (vertex' : t_vertices) shader'
 
                             ([vertex_x, vertex_y, vertex_z], shader') = (vertex_shader 0 [] new_shader) ::  ([Vec4 Double], Shader)
-                            (triangle_vertices', shader'') = (Vec.fromList [vertex_x, vertex_y, vertex_z], shader') :: ((Vec3 (Vec4 Double)), Shader)
+                            (screen_coordinates, shader'') = (Vec.fromList [vertex_x, vertex_y, vertex_z], shader') :: ((Vec3 (Vec4 Double)), Shader)
 
                             ----------- * TRIANGLE * -----------
                             -----------   SET BBOX -----------
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  (Vec.getElem 0 (Vec.getElem i triangle_vertices' ) ), (Vec.minimum $ (getCol i pts2)) ) |  i <- [0,1,2]]
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  (Vec.getElem 0 (Vec.getElem i triangle_vertices' ) ), (Vec.maximum $ (getCol i pts2)) ) |  i <- [0,1,2]]
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates ) ), (Vec.minimum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates) ), (Vec.maximum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
                         
                             --------------------------------------
                             
-                            update_zbuffer px py zbuffer = let  zbuffer' = draw_triangle px py pts2 zbuff rasteriser shader''
-                                                                (px', py') = if not (py > snd bboxmax && px <= fst bboxmax) 
-                                                                                then (px, py + 1) 
-                                                                                else if (py > snd bboxmax) && (px <= fst bboxmax) 
-                                                                                    then (px + 1, snd bboxmin ) 
-                                                                                    else (px, py)
-                                                            in  if px' == px && py' == py 
-                                                                then zbuffer' 
-                                                                else update_zbuffer px' py' zbuffer'
+                            (updated_zbuff, updated_shader) = draw_triangle rasteriser shader screen_vertices (fst bboxmin, fst bboxmax) (snd bboxmin, snd bboxmax) (fst bboxmin) (snd bboxmin) zbuff
                                                 
-                            zbuffer = update_zbuffer (fst bboxmin) (snd bboxmin) zbuff
 
 
-
-
-
-
-                        in  (zbuffer, shader'')
+                        in  (updated_zbuff, updated_shader)
 
 render_screen :: Screen -> ZBuffer -> IO [()]
 render_screen screen zbuffer =  do

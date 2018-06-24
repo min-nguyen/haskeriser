@@ -58,6 +58,8 @@ viewport_shader  x y w h shader = shader {viewport = viewport_matrix x y w h}
 lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader -> Shader
 lookat_shader  eye center up shader = shader {modelview = lookat_matrix eye center up }
 
+center :: Vec3 Double
+center = toVec3 0.0 0.0 10.0
 
 forward :: Vec3 Double
 forward = toVec3 0.0 0.0 1.0
