@@ -25,12 +25,12 @@ barycentric (v0, v1, v2) p = if (abs b2) < 0.025 then (toVec3D (-1.0) 1.0 1.0) e
                                (v1x, v1y) = fromVec2D v1 
                                (v2x, v2y) = fromVec2D v2
 
-projection_matrix :: Camera -> Vec4 (Vec4 Double)
+projection_matrix :: Camera -> Mat44 Double
 projection_matrix cam = Vec.set n3 (toVec4D 0.0 0.0 (-1.0/z) 1.0) identity
                         where  (x, y, z, w) = fromVec4D $ position cam
 
 
-viewport_matrix :: Double -> Double -> Double -> Double -> Vec4 (Vec4 Double)
+viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
 viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0],
                                         [0,       h/2.0,     0,          y+h/2.0],
                                         [0,       0,         255/2.0,    255/2.0],
@@ -38,7 +38,7 @@ viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0
 
 
 --                 EYE          CENTER        UP                                     
-lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Vec4 (Vec4 Double)
+lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double
 lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye - center
                                     (x2, y2, z2) = fromVec3D $  normalize $ or_Vec3 up (toVec3 x1 y1 z1)
                                     (x3, y3, z3) = fromVec3D $  normalize $ or_Vec3 (toVec3 x1 y1 z1) (toVec3 x2 y2 z2)
@@ -47,6 +47,13 @@ lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye 
                                                 [y1, y3,  y2,   0],
                                                 [z1, z3,  z2,   0],
                                                 [(-cx), (-cy), (-cz), 1]]
+
+mvp_matrix :: Shader -> Camera -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
+mvp_matrix shader camera x y w h eye' center' up'  =    let mvp =   (project_shader camera) .
+                                                                    (viewport_shader x y w h ) . 
+                                                                    (lookat_shader eye' center' up')
+                                                        in mvp shader 
+
 
 
 project_shader :: Camera -> Shader -> Shader
@@ -59,10 +66,10 @@ lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader -> Shader
 lookat_shader  eye center up shader = shader {modelview = lookat_matrix eye center up }
 
 center :: Vec3 Double
-center = toVec3 0.0 0.0 10.0
+center = toVec3D 0.0 0.0 0.0
 
 forward :: Vec3 Double
-forward = toVec3 0.0 0.0 1.0
+forward = toVec3D 0.0 0.0 1.0
 
 up :: Vec3 Double
-up = toVec3 0.0 1.0 0.0
+up = toVec3D 0.0 1.0 0.0

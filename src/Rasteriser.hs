@@ -42,7 +42,7 @@ draw_triangle (Rasteriser model screen camera light ) shader screen_vertices (bb
         [(x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)] = map fromVec4D [vertex_0, vertex_1, vertex_2]
        
         -- Coordinate Attributes
-        c = (barycentric ((projectVec4to2 (multms4 vertex_0 (1.0/w0) )), (projectVec4to2 (multms4 vertex_1  (1.0/w1))), (projectVec4to2 (multms4 vertex_2 (1.0/w2)))) (toVec2D (to_double px) (to_double py)))
+        c = (barycentric ((projectVec4to2 (multvs4 vertex_0 (1.0/w0) )), (projectVec4to2 (multvs4 vertex_1  (1.0/w1))), (projectVec4to2 (multvs4 vertex_2 (1.0/w2)))) (toVec2D (to_double px) (to_double py)))
         z = (z0 * getElem 0 c) + (z1 * getElem 1 c) + (z2 * getElem 2 c) 
         w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
         frag_depth = (z/w) :: Double
@@ -56,9 +56,9 @@ draw_triangle (Rasteriser model screen camera light ) shader screen_vertices (bb
                  in  recurseVertex updated_zbuffer updated_shader
         where
             recurseVertex new_zbuff new_shader 
-              | py >= bbox_max_y                        =  ((new_zbuff, new_shader))
+              | py >= bbox_max_y                        =  (new_zbuff, new_shader)
               | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1) new_zbuff) 
-              | px < bbox_max_x && py <  bbox_max_y     =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py new_zbuff)             
+              | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py new_zbuff)             
 
 
 

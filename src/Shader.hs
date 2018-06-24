@@ -20,17 +20,17 @@ import Data.Vec as Vec hiding (foldr)
 import Types
 import Util
 
-vertex_shade :: Shader -> Model -> Int -> Int -> (Vec.Vec4 Double, Shader)
-vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec.Vec4 Double
-                                                gl_Vertex = (Vec.multmv (viewport shader) (Vec.multmv (projection shader) (Vec.multmv (modelview shader) gl_vert)))  :: Vec.Vec4 Double
-                                                w = (1.0/(Vec.getElem 2 gl_Vertex)) :: Double
-                                                new_col =  multms3 (projectVec4to3D gl_Vertex) w
+vertex_shade :: Shader -> Model -> Int -> Int -> (Vec4 Double, Shader)
+vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
+                                                gl_Vertex = ((multmv (viewport shader)) . (multmv (projection shader)) . (multmv (modelview shader))) gl_vert  :: Vec4 Double
+                                                w = (1.0/(getElem 2 gl_Vertex)) :: Double
+                                                new_col =  multvs3 (projectVec4to3D gl_Vertex) w
                                                 new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri shader) 
                                             in (gl_Vertex, shader {varying_tri = new_varying_tri} )
 
 fragment_shade :: Shader -> Model -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
 fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ multmv (varying_tri shader) bary_coords) :: (Double, Double, Double)
-                                                    color = Vec.map ( (fromIntegral $ floor (pz/200.0)) *) ((toVec4 255 255 255 255) :: Vec4 Word8)
+                                                    color = multvs4 ((toVec4 10 10 10 10) :: Vec4 Word8) (fromIntegral $ floor (pz/200.0))
                                                 in  (color , shader) 
 
 
