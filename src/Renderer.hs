@@ -21,7 +21,7 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import SDL_Aux
+import SDLx
 import Triangle
 import Matrix 
 import Light

@@ -13,8 +13,8 @@ import Data.Word8
 import Data.List
 import Data.Cross
 import Foreign.C.Types
-import SDL.Vect
 import SDL (($=))
+import SDL.Vect
 import qualified SDL
 import qualified Data.Vector as V
 import Data.Vec as Vec hiding (take, drop, foldr, map)
@@ -74,6 +74,15 @@ toVec3 x y z = Vec.fromList [x,y,z]
 toVec4 :: (Num a) =>   a -> a -> a -> a -> Vec4 a
 toVec4 x y z w = Vec.fromList [x,y,z,w]
 
+toVec2Zeros ::  Vec2 Double
+toVec2Zeros = Vec.fromList $ replicate 2 0.0
+
+toVec3Zeros ::  Vec3 Double
+toVec3Zeros = Vec.fromList $ replicate 3 0.0
+
+toVec4Zeros ::  Vec4 Double
+toVec4Zeros = Vec.fromList $ replicate 4 0.0
+
 fromVec2D :: Vec2 Double -> ( Double , Double )
 fromVec2D xy =  let [x,y] = Vec.toList xy
                 in (x,y)
@@ -98,8 +107,6 @@ fromVec4 ::(Num a) =>   Vec4 a -> (a, a, a, a)
 fromVec4 xyzw = let [x,y,z,w] = Vec.toList xyzw 
                 in (x,y,z,w)
 
-embedVec3to4 :: (Num a) =>  Vec3 a -> Vec4 a
-embedVec3to4 v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
 
 projectVec4to3 :: (Num a) => Vec4 a -> Vec3 a
 projectVec4to3 v4 = let (x,y,z,w) = fromVec4 v4 in toVec3 x y z
@@ -110,12 +117,14 @@ projectVec3to2 v3 = let (x,y,z) = fromVec3 v3 in toVec2 x y
 projectVec4to2 :: (Num a) => Vec4 a -> Vec2 a
 projectVec4to2 v4 = let (x,y,z,w) = fromVec4 v4 in toVec2 x y 
 
+projectVec4to3D :: Vec4 Double -> Vec3 Double
+projectVec4to3D v4 = let (x,y,z,w) = fromVec4D v4 in toVec3D x y z
 
 embedVec3to4D ::  Vec3 Double -> Vec4 Double
 embedVec3to4D v3 = let (x,y,z) = fromVec3D v3 in toVec4D x y z 1
 
-projectVec4to3D :: Vec4 Double -> Vec3 Double
-projectVec4to3D v4 = let (x,y,z,w) = fromVec4D v4 in toVec3D x y z
+embedVec3to4 :: (Num a) =>  Vec3 a -> Vec4 a
+embedVec3to4 v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
 
 multms2 :: (Num a) => Vec2 a -> a -> Vec2 a
 multms2 m s = let vs = Vec.toList m
@@ -130,10 +139,6 @@ multms4 :: (Num a) => Vec4 a -> a -> Vec4 a
 multms4 m s = let vs = Vec.toList m
               in Vec.fromList $ map (s*) vs
 
-
-reduce_zbuffer :: [V.Vector (Double, Vec.Vec4 Word8)] ->  (V.Vector (Double, Vec4 Word8))
-reduce_zbuffer zbuffers =  foldr (\veca vecb -> V.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (V.zip veca vecb) ) V.empty zbuffers
-
 vec2ToV2 :: Vec2 a -> V2 a
 vec2ToV2 (x:.y:.()) = V2 x y
 
@@ -142,3 +147,9 @@ vec3ToV3 (x:.y:.z:.()) = V3 x y z
 
 vec4ToV4 :: Vec4 a -> V4 a
 vec4ToV4 (x:.y:.z:.w:.()) = V4 x y z w
+
+
+
+reduce_zbuffer :: [V.Vector (Double, Vec.Vec4 Word8)] ->  (V.Vector (Double, Vec4 Word8))
+reduce_zbuffer zbuffers =  foldr (\veca vecb -> V.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (V.zip veca vecb) ) V.empty zbuffers
+

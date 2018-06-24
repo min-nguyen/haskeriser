@@ -12,7 +12,7 @@ import Data.Cross
 import Camera
 import Matrix
 import Model
-import SDL_Aux
+import SDLx
 import Light
 import Geometry
 import Data.Word8
@@ -35,16 +35,12 @@ fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ 
 
 
 load_shader :: Shader
-load_shader = Shader {  modelview       = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        viewport        = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        projection      = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        uniform_M       = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        uniform_MIT     = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        uniform_Mshadow = toVec4 (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0) (toVec4D 0.0 0.0 0.0 0.0),
-                        varying_uv      = toVec2 (toVec3D 0.0 0.0 0.0) (toVec3D 0.0 0.0 0.0),
-                        varying_tri     = toVec3 (toVec3D 0.0 0.0 0.0) (toVec3D 0.0 0.0 0.0) (toVec3D 0.0 0.0 0.0)
+load_shader = Shader {  modelview       = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        viewport        = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        projection      = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        uniform_M       = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        uniform_MIT     = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        uniform_Mshadow = Vec.fromList $ replicate 4 (toVec4Zeros),
+                        varying_uv      = Vec.fromList $ replicate 2 (toVec3Zeros),
+                        varying_tri     = Vec.fromList $ replicate 3 (toVec3Zeros)
                     }
-
-
-
-

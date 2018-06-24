@@ -17,7 +17,7 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import SDL_Aux
+import SDLx
 import Control.Lens
 import Data.List.Split
 import Data.Vec as Vec

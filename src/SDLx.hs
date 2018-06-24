@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
  
-module SDL_Aux where
+module SDLx where
 
 
 import Prelude hiding (any, mapM_)

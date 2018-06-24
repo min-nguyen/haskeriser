@@ -12,7 +12,7 @@ import SDL.Vect
 import SDL (($=))
 import qualified SDL
 import Matrix as Matrix
-import SDL_Aux
+import SDLx
 import Data.Vec as Vec
 import Types
 

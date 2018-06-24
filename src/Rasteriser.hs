@@ -15,7 +15,7 @@ import Data.Cross
 import Camera
 import Matrix
 import Model
-import SDL_Aux
+import SDLx
 import Light
 import Geometry
 import Util

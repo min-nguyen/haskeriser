@@ -29,7 +29,7 @@ import Util
 import Codec.Picture
 import Codec.Picture.Types
 import Camera
-import SDL_Aux
+import SDLx
 import Light
 import Types
 

@@ -15,7 +15,7 @@ import SDL (($=))
 import qualified SDL
 import Matrix as Matrix
 import Triangle
-import SDL_Aux
+import SDLx
 import Renderer
 import Model
 import Camera

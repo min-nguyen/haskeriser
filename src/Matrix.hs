@@ -16,7 +16,7 @@ import Foreign.C.Types
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
-import SDL_Aux
+import SDLx
 import Control.Lens
 import Camera
 import qualified Data.Vector as V
