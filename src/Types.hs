@@ -114,8 +114,11 @@ type ZBuffer = V.Vector (Double, Vec4 Word8)
 
 type ScreenCoords = Vec3 (Vec3 Int) 
 
+rCONST_depth  :: Double
+rCONST_depth = 2000.0
+
 screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (800, 800)
+(screenWidth, screenHeight) = (150, 150)
 
 get  :: Kernel s s
 get  = Kernel {runKernel = (\s -> (s, s)) }

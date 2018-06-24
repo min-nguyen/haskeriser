@@ -25,6 +25,7 @@ import Geometry
 import Types
 import Util
 
+
 vertex_shade :: Shader -> Model -> Int -> Int -> (Vec4 Double, Shader)
 vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
                                                 gl_Vertex = ((multmv (viewport shader)) . (multmv (projection shader)) . (multmv (modelview shader))) gl_vert  :: Vec4 Double
@@ -35,7 +36,10 @@ vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model
 
 fragment_shade :: Shader -> Model -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
 fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ multmv (varying_tri shader) bary_coords) :: (Double, Double, Double)
-                                                    color = multvs4 ((toVec4 10 10 10 10) :: Vec4 Word8) (fromIntegral $ floor (pz/200.0))
+                                                -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
+                                                -- |      INSERT RGBA MULTIPLICATION INTO HERE !!                           | -- 
+                                                --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  --                                    
+                                                    color = multvs4 ((toVec4 255 255 255 255) :: Vec4 Word8) (fromIntegral $ floor (pz/rCONST_depth))
                                                 in  (color , shader) 
 
 

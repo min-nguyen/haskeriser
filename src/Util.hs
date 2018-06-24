@@ -73,6 +73,9 @@ mapTuple2 f (a1, a2) = (f a1, f a2)
 mapTuple3 :: (a -> b) -> (a, a, a) -> (b, b, b)
 mapTuple3 f (a1, a2, a3) = (f a1, f a2, f a3)
 
+mapTuple4 :: (a -> b) -> (a, a, a, a) -> (b, b, b, b)
+mapTuple4 f (a1, a2, a3, a4) = (f a1, f a2, f a3, f a4)
+
 map2 :: (Functor f) => (a -> b) -> f (f a) -> f (f b)
 map2 f fa = fmap (fmap f) fa
 
@@ -176,6 +179,14 @@ or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - a
             where (ax, ay, az) = fromVec3D a
                   (bx, by, bz) = fromVec3D b
               
+    ---- |‾| -------------------------------------------------------------- |‾| ----
+     --- | |                        RGBA Arithmetic                         | | ---
+      --- ‾------------------------------------------------------------------‾---
+  
+mult_rgba ::  Vec4 Word8 -> Double -> Vec4 Word8
+mult_rgba rgba intensity = let  (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
+                           in if intensity > 1.0 then rgba else if intensity < 0.0 then toVec4 0 0 0 0 else (   let  (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (intensity *)) (r, g, b, a)
+                                                                                                                in toVec4 r' g' b' a'   )
 
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---

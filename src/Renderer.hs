@@ -55,13 +55,10 @@ draw_loop rasteriser shader = do
         screen_width    = to_double $ width_i screen
         screen_height   = to_double $ height_i screen
         light_dir       = Vec.normalize $ direction light
-
-        modelviewx      = (toVec4 (toVec4D 5.0 4.0 0.0 0.0) (toVec4D 0.0 3.0 2.0 0.0) (toVec4D 0.0 0.0 3.0 3.0) (toVec4D 0.0 0.0 2.0 1.0)) :: Mat44 Double
-        viewportx       = (toVec4 (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0)) :: Mat44 Double
-        k = multmm modelviewx viewportx
+        depth_coeff     = 0.0
 
          ----------- SET UP MVP MATRICES IN SHADER -----------
-        setup_shader = mvp_matrix shader camera (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up
+        setup_shader = mvp_matrix shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up
 
 
     let zbuff' = process_triangles zbuffer rasteriser setup_shader 0
@@ -95,7 +92,9 @@ process_triangle zbuff rasteriser shader iface  =
                             (screen_coordinates, shader'') =  (toVec3 vertex_x vertex_y vertex_z, shader')  :: (Mat34 Double, Shader)
                  
                             ----------- * TRIANGLE * -----------
+
                             -----------   SET BBOX -----------
+
                             bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
                                             ((1000000.0), (1000000.0)) 
                                             [ (  (getElem 0 (getElem i screen_coordinates ) ), (Vec.minimum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2] ]
@@ -116,7 +115,7 @@ process_triangle zbuff rasteriser shader iface  =
                         in  (updated_zbuff, updated_shader)
 
 render_screen :: Screen -> ZBuffer -> IO [()]
-render_screen screen zbuffer =  do
+render_screen screen zbuffer =
                 mapM (\index -> do 
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 

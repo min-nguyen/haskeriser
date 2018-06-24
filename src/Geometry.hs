@@ -38,15 +38,15 @@ barycentric (a, b, c) p = let v0 = b - a
                              then toVec3D u v w
                              else toVec3D (-1.0) 1.0 1.0
 
-projection_matrix :: Camera -> Mat44 Double
-projection_matrix cam = Vec.set n3 (toVec4D 0.0 0.0 (-1.0/z) 1.0) identity
-                        where  (x, y, z, w) = fromVec4D $ position cam
+projection_matrix :: Double -> Mat44 Double
+projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
+                   
 
 
 viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
 viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0],
                                         [0,       h/2.0,     0,          y+h/2.0],
-                                        [0,       0,         255/2.0,    255/2.0],
+                                        [0,       0,         rCONST_depth/2.0,    rCONST_depth/2.0],
                                         [0,       0,         0,          1]]
 
 
@@ -61,16 +61,16 @@ lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye 
                                                 [z1, z3,  z2,   0],
                                                 [(-cx), (-cy), (-cz), 1]]
 
-mvp_matrix :: Shader -> Camera -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
-mvp_matrix shader camera x y w h eye' center' up'  =    let mvp =   (project_shader camera) .
+mvp_matrix :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
+mvp_matrix shader coeff x y w h eye' center' up'  =    let mvp =    (project_shader coeff) .
                                                                     (viewport_shader x y w h ) . 
                                                                     (lookat_shader eye' center' up')
                                                         in mvp shader 
 
 
 
-project_shader :: Camera -> Shader -> Shader
-project_shader  cam  shader = shader {projection = projection_matrix cam}
+project_shader :: Double -> Shader -> Shader
+project_shader  coeff  shader = shader {projection = projection_matrix coeff}
 
 viewport_shader :: Double -> Double -> Double -> Double ->  Shader -> Shader
 viewport_shader  x y w h shader = shader {viewport = viewport_matrix x y w h}
