@@ -56,5 +56,26 @@ map3 f fa = fmap (fmap (fmap f)) fa
 listToTuple3 :: [a] -> (a, a, a)
 listToTuple3 as = (as !! 0, as !! 1, as !! 2)
 
+toVec2 :: a -> a -> Vec2 a
+toVec2 x y = Vec.fromList [x,y]
+
+toVec3 :: a -> a -> a -> Vec3 a
+toVec3 x y z = Vec.fromList [x,y,z]
+
+toVec4 :: a -> a -> a -> a -> Vec4 a
+toVec4 x y z w = Vec.fromList [x,y,z,w]
+
+fromVec2 :: Vec2 a -> ( a , a )
+fromVec2 xy =  let [x,y] = Vec.toList xy
+                in (x,y)
+fromVec3 :: Vec3 a ->  (a , a , a) 
+fromVec3 xyz = let [x,y,z] = Vec.toList xyz
+                in (x,y,z)
+fromVec4 :: Vec4 a -> (a , a , a , a)
+fromVec4 xyzw = let [x,y,z,w] = Vec.toList xyzw 
+                in (x,y,z,w)
+
+
+
 reduce_zbuffer :: [V.Vector (Double, Vec.Vec4 Word8)] ->  (V.Vector (Double, Vec4 Word8))
 reduce_zbuffer zbuffers =  foldr (\veca vecb -> V.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (V.zip veca vecb) ) V.empty zbuffers
