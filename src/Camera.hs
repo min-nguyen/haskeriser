@@ -1,16 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
--- |                                                                        | -- 
--- |                        CAMERA ATTRIBUTES/FUNCTIONS                     | -- 
--- |                                                                        | -- 
--- |                                                                        | -- 
---  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+        -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+        -- |                                                                        | -- 
+        -- |                        CAMERA ATTRIBUTES/FUNCTIONS                     | -- 
+        -- |                                                                        | -- 
+        -- |                                                                        | -- 
+        --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
 
 module Camera
     where
 
-import Prelude
 import Prelude hiding (any, mapM_)
 import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)

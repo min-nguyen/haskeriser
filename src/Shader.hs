@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
--- |                                                                        | -- 
--- |                     	     SHADER FUNCTIONS                           | -- 
--- |                                                                        | -- 
--- |                                                                        | -- 
---  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+        -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+        -- |                                                                        | -- 
+        -- |                     	     SHADER FUNCTIONS                           | -- 
+        -- |                                                                        | -- 
+        -- |                                                                        | -- 
+        --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
 
 module Shader
     where
@@ -18,7 +18,6 @@ import Data.Cross
 import Data.Word8
 import Data.Vec as Vec hiding (foldr)
 import Camera
-import Matrix
 import Model
 import SDLx
 import Light

@@ -14,7 +14,6 @@
 module Types
     where
 
-import Prelude
 import Prelude hiding (any, mapM_)
 import SDL.Vect
 import SDL (($=))

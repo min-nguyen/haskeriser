@@ -3,7 +3,6 @@
 module Matrix
     where
 
-import Prelude
 import Prelude hiding (any, mapM_)
 import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)

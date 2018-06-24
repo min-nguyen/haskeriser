@@ -1,18 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
--- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
--- |                                                                        | -- 
--- |                       RASTERIZING OPERATIONS                           | -- 
--- |                                                                        | -- 
--- |                                                                        | -- 
---  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+        -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+        -- |                                                                        | -- 
+        -- |                       RASTERIZING OPERATIONS                           | -- 
+        -- |                                                                        | -- 
+        -- |                                                                        | -- 
+        --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
 
 
 module Rasteriser
     where
 
-import Prelude
 import Prelude hiding (any, mapM_)
 import SDL.Vect
 import SDL (($=))
@@ -22,7 +21,6 @@ import Data.Word8
 import qualified Data.Vector as V
 import Data.Cross
 import Camera
-import Matrix
 import Model
 import SDLx
 import Light

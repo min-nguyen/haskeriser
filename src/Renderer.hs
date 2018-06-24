@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
--- |                                                                        | -- 
--- |                        ROOT RENDERING SOURCE                           | -- 
--- |                                                                        | -- 
--- |                                                                        | -- 
---  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
+        -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
+        -- |                                                                        | -- 
+        -- |                        ROOT RENDERING SOURCE                           | -- 
+        -- |                                                                        | -- 
+        -- |                                                                        | -- 
+        --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  -- 
 
 module Renderer
     where
@@ -30,7 +30,6 @@ import SDL (($=))
 import qualified SDL
 import SDLx
 import Triangle
-import Matrix 
 import Light
 import Camera
 import Control.Lens
