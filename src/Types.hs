@@ -30,10 +30,10 @@ data Model = Model {verts       :: V.Vector (Vec3 Double, Int),
                     nfaces :: Int,
                     nverts :: Int}
 
-data Rasteriser = Rasteriser {  model       :: Model,
-                                screen      :: Screen,
-                                camera      :: Camera,
-                                light       :: Light}
+data Rasteriser = Rasteriser {  getModel       :: Model,
+                                getScreen      :: Screen,
+                                getCamera      :: Camera,
+                                getLight       :: Light}
 
 data Shader     = Shader    {   modelview       :: Vec4 (Vec4 Double),
                                 viewport        :: Vec4 (Vec4 Double),

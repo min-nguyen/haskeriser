@@ -15,7 +15,7 @@ import SDL_Aux
 import Light
 import Geometry
 import Data.Word8
-import qualified Data.Vec as Vec hiding (foldr)
+import Data.Vec as Vec hiding (foldr)
 import Types
 import Util
 
@@ -26,6 +26,13 @@ vertex_shade shader model iface nthvert =   let gl_vert = (embedVec3to4D $ model
                                                 new_col =  multms3 (projectVec4to3D gl_Vertex) w
                                                 new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri shader) 
                                             in (gl_Vertex, shader {varying_tri = new_varying_tri} )
+
+fragment_shade :: Shader -> Model -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
+fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ multmv (varying_tri shader) bary_coords) :: (Double, Double, Double)
+                                                    color = Vec.map ( (fromIntegral $ floor (pz/200.0)) *) ((toVec4 255 255 255 255) :: Vec4 Word8)
+                                                in  (color , shader) 
+
+
 -- class IShader a where 
 --     vertex :: a -> Rasteriser  -> V3 Double -> V3 Double
 --     fragment :: a -> Bool

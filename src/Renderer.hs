@@ -52,19 +52,19 @@ draw_loop rasteriser shader = do
 
 process_triangles :: ZBuffer -> Rasteriser -> Shader -> Int -> ZBuffer
 process_triangles zbuff rasteriser shader iface = go 
-    where go =  if (iface > (nfaces (r_model rasteriser) - 1)) 
+    where go =  if (iface > (nfaces (getModel rasteriser) - 1)) 
                 then zbuff 
-                else let (zbuff', shader') = process_triangle zbuff rasteriser shader iface (varying_tri shader)
+                else let (zbuff', shader') = process_triangle zbuff rasteriser shader iface
                      in (process_triangles zbuff' rasteriser shader' (iface + 1) )
                      
-process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> Matrix Double -> (ZBuffer, Shader)
-process_triangle zbuff rasteriser shader iface clipc = 
+process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> (ZBuffer, Shader)
+process_triangle zbuff rasteriser shader iface  = 
                         let (Rasteriser model screen camera light) = rasteriser
 
                             -- Acquire shader with new MVP matrices 
                             (screen_coords, new_shader) =   ((project_shader camera) . 
                                                             (viewport_shader screen_width/8 screen_height/8 screen_width * (3/4) screen_height * (3/4)) . 
-                                                            (lookat_shader (normalize direction light) center up) $ shader) :: (Vec4 Double, Shader)
+                                                            (lookat_shader (Vec.normalize $ direction light) center up) $ shader) :: (Vec4 Double, Shader)
 
                         -- in 
                             ----------- VERTEX SHADER -----------
@@ -77,8 +77,8 @@ process_triangle zbuff rasteriser shader iface clipc =
 
                             ----------- * TRIANGLE * -----------
                             -----------   SET BBOX -----------
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  ((triangle_vertices' M.!! i ) M.!! 0), (minimum $ V.toList (getCol i pts2))  ) |  i <- [0,1,2]]
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  ((triangle_vertices' M.!! i ) M.!! 0), (maximum $ V.toList (getCol i pts2))   ) |  i <- [0,1,2]]
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  (Vec.getElem 0 (Vec.getElem i triangle_vertices' ) ), (Vec.minimum $ (getCol i pts2)) ) |  i <- [0,1,2]]
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  (Vec.getElem 0 (Vec.getElem i triangle_vertices' ) ), (Vec.maximum $ (getCol i pts2)) ) |  i <- [0,1,2]]
                         
                             --------------------------------------
                             
@@ -93,6 +93,11 @@ process_triangle zbuff rasteriser shader iface clipc =
                                                                 else update_zbuffer px' py' zbuffer'
                                                 
                             zbuffer = update_zbuffer (fst bboxmin) (snd bboxmin) zbuff
+
+
+
+
+
 
                         in  (zbuffer, shader'')
 

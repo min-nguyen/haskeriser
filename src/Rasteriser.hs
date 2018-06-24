@@ -34,32 +34,30 @@ load_shadowbuffer (Rasteriser model screen camera  light )  = (V.fromList (repli
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
 draw_triangle :: Rasteriser->  Vec3 (Vec4 Int) ->  Int -> Int -> ZBuffer ->  ZBuffer
-draw_triangle (Rasteriser model screen camera light ) screen_vertices  px py zbuffer = 
-    let 
-        -- Screen Coordinates
-        [vertex_0, vertex_1, vertex_2] = Vec.toList screen_vertices
-        [(x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)] = map fromVec4 [vertex_0, vertex_1, vertex_2]
+draw_triangle (Rasteriser model screen camera light ) screen_vertices  px py zbuffer = zbuffer
+    -- let 
+    --     -- Screen Coordinates
+    --     [vertex_0, vertex_1, vertex_2] = Vec.toList screen_vertices
+    --     [(x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)] = map fromVec4 [vertex_0, vertex_1, vertex_2]
 
-        -- Coordinate Attributes
-        c = barycentric (projectVec4to2 (vertex_0 / w0 )) (projectVec4to2 (vertex_1 / w1)) (projectVec4to2 (vertex_2 / w2)) px py  
-        z = (z0 * getElem 0 c) + (z1 * getElem 1 c) + (z2 * getElem 2 c) 
-        w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
-        frag_depth = z/w
+    --     -- Coordinate Attributes
+    --     c = barycentric (projectVec4to2 (vertex_0 / w0 )) (projectVec4to2 (vertex_1 / w1)) (projectVec4to2 (vertex_2 / w2)) px py  
+    --     z = (z0 * getElem 0 c) + (z1 * getElem 1 c) + (z2 * getElem 2 c) 
+    --     w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
+    --     frag_depth = z/w
 
-    in 
-          -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
-        if (getElem 0 c < 0 || getElem 1 c < 0 || getElem 2 c < 0 || zbuffer !! (px + py * (width screen)) > frag_depth )
-            then recurseVertex zbuffer
-            else let fragment_shade shader
-                     updated_zbuffer = replaceAt (px + py * (width screen)) frag_depth zbuffer
-                     recurseVertex updated_zbuffer
-        where
-            recurseVertex zbuff = case (px,py) of 
-                px > 2 && py >= 2   ->  -- end
-                px > 2 && py < 2    ->  draw_triangle (Rasteriser model screen camera light ) screen_vertices  0 (py + 1) zbuff 
-                px <= 2             ->  draw_triangle (Rasteriser model screen camera light ) screen_vertices  (px+1) py zbuff             
-
-
+    -- in 
+    --       -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
+    --     if (getElem 0 c < 0 || getElem 1 c < 0 || getElem 2 c < 0 || zbuffer !! (px + py * (width screen)) > frag_depth )
+    --         then recurseVertex zbuffer
+    --         else let fragment_shade shader
+    --                  updated_zbuffer = replaceAt (px + py * (width screen)) frag_depth zbuffer
+    --                  recurseVertex updated_zbuffer
+    --     where
+    --         recurseVertex zbuff = case (px,py) of 
+    --             px > 2 && py >= 2   ->  -- end
+    --             px > 2 && py < 2    ->  draw_triangle (Rasteriser model screen camera light ) screen_vertices  0 (py + 1) zbuff 
+    --             px <= 2             ->  draw_triangle (Rasteriser model screen camera light ) screen_vertices  (px+1) py zbuff             
 
 
 
@@ -67,7 +65,9 @@ draw_triangle (Rasteriser model screen camera light ) screen_vertices  px py zbu
 
 
 
-                
+
+
+
 -- order_min_x :: (Vec3 Double, Vec3 Double) -> (Vec2 Double, Vec2 Double) -> ((Vec3 Double, Vec3 Double), (Vec2 Double, Vec2 Double))
 -- order_min_x (Vec3 vAx vAy vAz, Vec3 vBx vBy vBz) (Vec2 vAu vAv, Vec2 vBu vBv)
 --     | (vAx > vBx) = ((Vec3 vBx vBy vBz, Vec3 vAx vAy vAz), (Vec2 vBu vBv, Vec2 vAu vAv))

@@ -84,7 +84,7 @@ fromVec3D xyz = let [x,y,z] = Vec.toList xyz
 
 fromVec4D :: Vec4 Double ->  (Double , Double, Double, Double)
 fromVec4D xyzw = let [x,y,z,w] = Vec.toList xyzw 
-                in (x,y,z,w)
+                 in (x,y,z,w)
 
 fromVec2 ::(Num a) =>   Vec2 a -> ( a , a )
 fromVec2 xy =  let [x,y] = Vec.toList xy
