@@ -4,6 +4,7 @@ module Renderer
     where
 
 import Prelude hiding (any, mapM_)
+import Data.Vec
 import Control.Monad hiding (mapM_)
 import Control.Arrow ((***))
 import Control.Monad.Par
@@ -22,7 +23,8 @@ import Debug.Trace
 import SDL_Aux
 import Triangle
 import Matrix hiding ((!!))
-import qualified Matrix  as M ((!!))
+import qualified Matrix as M ((!!))
+import Data.Matrix as Matrix
 import Light
 import Camera
 import Control.Lens
@@ -32,55 +34,75 @@ import Util
 import Data.List.Split
 import Rasteriser
 import Shader
-
+import Model
 
 
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
-    let zbuffer = load_zbuffer rasteriser
+    let (Rasteriser model screen camera light) = rasteriser
+        zbuffer = load_zbuffer rasteriser
     --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
-    screen_world_coords <- mapM (\ind -> do 
-                                    let face = model_face (model rasteriser) ind 
-                                        (w_v0, w_v1, w_v2) = mapTuple3 (\i -> model_vert (model rasteriser) (fromIntegral $ (face !! i))) (0,1,2)
-                                        (s_v0, s_v1, s_v2) = mapTuple3 (\v -> vertex shader rasteriser v)  (w_v0, w_v1, w_v2)
-
-                                    return $ (V3 s_v0 s_v1 s_v2) :: V3 (V3 Double)) ([0 .. (nfaces (model rasteriser)) - 1] :: [Int])
-
     -- render_screen (screen rasteriser) (process_triangles (0::Int) zbuffer screen_world_coords rasteriser)
-
+    let zbuff' = process_triangles zbuffer rasteriser shader 0
+    render_screen (screen) zbuff'
     return ()
 
-process_triangles :: Int -> ZBuffer -> [ScreenCoords] -> Rasteriser -> ZBuffer
-process_triangles idx zbuff coords (Rasteriser model screen camera light ) = go 
-                                            where go = 
-                                                     case coords of (x:xs) -> (\(screen_v) -> 
-                                                                                
-                                                                                let (world_0, world_1, world_2) = Debug.Trace.trace (show (length xs) ++ "/" ++ (show $ length $ faces model) ++ " left to process") world_v
-                                                                                    norm = norm_V3 $ or_V3  (world_2 - world_0) (world_1 - world_2)
-                                                                                    light_intensity = norm * (direction light)
-                                                                                in if (light_intensity > 0) 
-                                                                                    then ( 
 
-                                                                                        let screen_v_ints = map_V3 (map_V3 floor) screen_v                        
-                                                                                            uv = map_V3 (model_uv model idx) ((0, 1, 2) :: (Int, Int, Int))
-                                                                                            zbuff' = draw_triangle (Rasteriser model screen camera light ) screen_v_ints uv zbuff
-                                                                                            
-                                                                                        in process_triangles (idx + 1) zbuff' xs (Rasteriser model screen camera light )) 
-                                                                                    else 
-                                                                                        process_triangles (idx + 1) zbuff  xs (Rasteriser model screen camera light )) x
-                                                                    empty ->  zbuff
-                                   
+
+process_triangles :: ZBuffer -> Rasteriser -> Shader -> Int -> ZBuffer
+process_triangles zbuff rasteriser shader iface = go 
+    where go =  if (iface > (nfaces (r_model rasteriser) - 1)) 
+                then zbuff 
+                else let (zbuff', shader') = process_triangle zbuff rasteriser shader iface (varying_tri shader)
+                     in (process_triangles zbuff' rasteriser shader' (iface + 1) )
+                     
+process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> Matrix Double -> (ZBuffer, Shader)
+process_triangle zbuff rasteriser shader iface clipc = 
+                        let (Rasteriser model screen camera light) = rasteriser
+                            pts = Matrix.transpose $ viewport_mat shader * clipc
+                            pts2 = (scaleMatrix (1/(Matrix.getElem 3 0 pts)) (colVector (getCol 0 pts)) ) <|> 
+                                    (scaleMatrix (1/(Matrix.getElem 3 1 pts)) (colVector (getCol 1 pts)) ) <|>  
+                                        (scaleMatrix (1/(Matrix.getElem 3 2 pts)) (colVector (getCol 2 pts)) )
+                            ----------- VERTEX SHADER -----------
+                            vertex_shader nthvert t_vertices t_shader = if iface > 2 then (t_vertices, t_shader)
+                                                                        else let (vertex', shader') = vertex_shade shader rasteriser iface nthvert
+                                                                             in  vertex_shader (nthvert + 1) (vertex' : t_vertices) shader'
+
+                            (triangle_vertices', shader') = vertex_shader 0 [] shader
+                            (triangle_vertices'', shader'') = (fromListToVec3 triangle_vertices', shader') :: ((Vec3 (Vec4 Double)), Shader)
+
+                            ----------- * TRIANGLE * -----------
+                            -----------   SET BBOX -----------
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  ((triangle_vertices'' M.!! i ) M.!! 0), (minimum $ V.toList (getCol i pts2))  ) |  i <- [0,1,2]]
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  ((triangle_vertices'' M.!! i ) M.!! 0), (maximum $ V.toList (getCol i pts2))   ) |  i <- [0,1,2]]
+                        
+                            --------------------------------------
+                            
+                            update_zbuffer px py zbuffer = let  zbuffer' = draw_triangle px py pts2 zbuff rasteriser shader''
+                                                                (px', py') = if not (py > snd bboxmax && px <= fst bboxmax) 
+                                                                                then (px, py + 1) 
+                                                                                else if (py > snd bboxmax) && (px <= fst bboxmax) 
+                                                                                    then (px + 1, snd bboxmin ) 
+                                                                                    else (px, py)
+                                                            in  if px' == px && py' == py 
+                                                                then zbuffer' 
+                                                                else update_zbuffer px' py' zbuffer'
+                                                
+                            zbuffer = update_zbuffer (fst bboxmin) (snd bboxmin) zbuff
+
+                        in  (zbuffer, shader'')
+
 render_screen :: Screen -> ZBuffer -> IO [()]
 render_screen screen zbuffer =  do
                 mapM (\index -> do 
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
                                     rgba = snd $ zbuffer V.! index
-                                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
+                                sdl_put_pixel screen (Vec2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
 
 
 
--- parallel :: V.Vector (Double, V4 Word8) ->  [[((V3 Double, V3 Double, V3 Double), (V3 Double, V3 Double, V3 Double))]] -> Light -> Model -> Screen ->  V.Vector (Double, V4 Word8)
+-- parallel :: V.Vector (Double, Vec4 Word8) ->  [[((Vec3 Double, Vec3 Double, Vec3 Double), (Vec3 Double, Vec3 Double, Vec3 Double))]] -> Light -> Model -> Screen ->  V.Vector (Double, Vec4 Word8)
 -- parallel  zbuffer screen_world_coords light model screen  = 
 --     runPar $ do
 --         [a,b,c,d] <- sequence [new, new, new, new]

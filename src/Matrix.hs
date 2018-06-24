@@ -20,104 +20,105 @@ import SDL_Aux
 import Control.Lens
 import Camera
 import qualified Data.Vector as V
+import Data.Vec
 
-toMatV2 :: V2 Double -> Matrix Double
-toMatV2 (V2 a b) = fromList 2 1 [a, b]
+toMatVec2 :: Vec2 Double -> Matrix Double
+toMatVec2 (Vec2 a b) = fromList 2 1 [a, b]
 
-toMatV3 :: V3 Double -> Matrix Double
-toMatV3 (V3 a b c) = fromList 3 1 [a, b, c]
+toMatVec3 :: Vec3 Double -> Matrix Double
+toMatVec3 (Vec3 a b c) = fromList 3 1 [a, b, c]
 
-toMatV4 :: V4 Double -> Matrix Double
-toMatV4 (V4 a b c d) = fromList 4 1 [a, b, c, d]
+toMatVec4 :: Vec4 Double -> Matrix Double
+toMatVec4 (Vec4 a b c d) = fromList 4 1 [a, b, c, d]
 
-fromV3toMatV4 ::  V3 Double -> Matrix Double
-fromV3toMatV4 (V3 a b c) = fromList 4 1 [a, b, c, 1.0]
+fromVec3toMatVec4 ::  Vec3 Double -> Matrix Double
+fromVec3toMatVec4 (Vec3 a b c) = fromList 4 1 [a, b, c, 1.0]
 
-fromMatV2 :: Matrix Double -> V2 Double
-fromMatV2 m  = case toLists m of (x:xs) -> (\(x:y:_) -> V2 x y) $ head $ toLists m
-                                 [] -> V2 0 0 
+fromMatVec2 :: Matrix Double -> Vec2 Double
+fromMatVec2 m  = case toLists m of (x:xs) -> (\(x:y:_) -> Vec2 x y) $ head $ toLists m
+                                 [] -> Vec2 0 0 
 
-fromMatV3 :: Matrix Double -> V3 Double
-fromMatV3 m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 x y z) $ head $ toLists m
-                                 [] -> V3 0 0 0 
+fromMatVec3 :: Matrix Double -> Vec3 Double
+fromMatVec3 m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> Vec3 x y z) $ head $ toLists m
+                                 [] -> Vec3 0 0 0 
 
-fromMatV4 :: Matrix Double -> V4 Double
-fromMatV4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V4 x y z w) $ Matrix.toList m
-                                  [] -> V4 0 0 0 0
+fromMatVec4 :: Matrix Double -> Vec4 Double
+fromMatVec4 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> Vec4 x y z w) $ Matrix.toList m
+                                  [] -> Vec4 0 0 0 0
 
-fromMatV4toV3 :: Matrix Double -> V3 Double
-fromMatV4toV3 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 (x/w) (y/w) (z/w)) $ Matrix.toList m
-                                      [] -> V3 0 0 0
+fromMatVec4toVec3 :: Matrix Double -> Vec3 Double
+fromMatVec4toVec3 m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> Vec3 (x/w) (y/w) (z/w)) $ Matrix.toList m
+                                      [] -> Vec3 0 0 0
 
-fromMatV4toV3I :: Matrix Double -> V3 Int
-fromMatV4toV3I m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> V3 (floor x) (floor y) (floor z)) $ Matrix.toList m
-                                       [] -> V3 0 0 0
+fromMatVec4toVec3I :: Matrix Double -> Vec3 Int
+fromMatVec4toVec3I m  =  case toLists m of (x:xs) -> (\(x:y:z:w:_) -> Vec3 (floor x) (floor y) (floor z)) $ Matrix.toList m
+                                       [] -> Vec3 0 0 0
 
-fromMatV3I :: Matrix Double -> V3 Int
-fromMatV3I m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> V3 (floor x) (floor y) (floor z)) $ head $ toLists m
-                                  [] -> V3 0 0 0
+fromMatVec3I :: Matrix Double -> Vec3 Int
+fromMatVec3I m  = case toLists m of (x:xs) -> (\(x:y:z:_) -> Vec3 (floor x) (floor y) (floor z)) $ head $ toLists m
+                                  [] -> Vec3 0 0 0
 
-fromMatV2sq :: Matrix Double -> (V2 Double, V2 Double)
-fromMatV2sq m  = let [va, vb] = map (\[x, y] -> V2 x y) $ toLists m
+fromMatVec2sq :: Matrix Double -> (Vec2 Double, Vec2 Double)
+fromMatVec2sq m  = let [va, vb] = map (\[x, y] -> Vec2 x y) $ toLists m
                 in (va, vb)
 
-fromMatV3sq :: Matrix Double -> (V3 Double, V3 Double, V3 Double)
-fromMatV3sq m = let [va, vb, vc] = map (\[x, y, z] -> V3 x y z) $ toLists m
+fromMatVec3sq :: Matrix Double -> (Vec3 Double, Vec3 Double, Vec3 Double)
+fromMatVec3sq m = let [va, vb, vc] = map (\[x, y, z] -> Vec3 x y z) $ toLists m
                 in (va, vb, vc)
 
-fromMatV4sq :: Matrix Double -> (V4 Double, V4 Double, V4 Double, V4 Double)
-fromMatV4sq m = let [va, vb, vc, vd] = map (\[x, y, z, w] -> V4 x y z w) $ toLists m
+fromMatVec4sq :: Matrix Double -> (Vec4 Double, Vec4 Double, Vec4 Double, Vec4 Double)
+fromMatVec4sq m = let [va, vb, vc, vd] = map (\[x, y, z, w] -> Vec4 x y z w) $ toLists m
                 in (va, vb, vc, vd)
 
-or_V3 :: V3 Double -> V3 Double -> V3 Double
-or_V3 (V3 ax ay az) (V3 bx by bz) = V3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
+or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
+or_Vec3 (Vec3 ax ay az) (Vec3 bx by bz) = Vec3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
 
-map_V2 :: (a -> b) -> V2 a -> V2 b
-map_V2 f (V2 x y ) = V2 (f x) (f y)
+map_Vec2 :: (a -> b) -> Vec2 a -> Vec2 b
+map_Vec2 f (Vec2 x y ) = Vec2 (f x) (f y)
 
-map_V3 :: (a -> b) -> V3 a -> V3 b
-map_V3 f (V3 x y z) = V3 (f x) (f y) (f z)
+map_Vec3 :: (a -> b) -> Vec3 a -> Vec3 b
+map_Vec3 f (Vec3 x y z) = Vec3 (f x) (f y) (f z)
 
-norm_V3 :: V3 Double  -> V3 Double
-norm_V3 (V3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
-                        in V3 (ax/magnitude) (ay/magnitude) (az/magnitude)
+norm_Vec3 :: Vec3 Double  -> Vec3 Double
+norm_Vec3 (Vec3 ax ay az) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az))
+                        in Vec3 (ax/magnitude) (ay/magnitude) (az/magnitude)
 
-norm_V4 :: V4 Double  -> V4 Double
-norm_V4 (V4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))
-                           in V4 (ax/magnitude) (ay/magnitude) (az/magnitude) (aw/magnitude)
+norm_Vec4 :: Vec4 Double  -> Vec4 Double
+norm_Vec4 (Vec4 ax ay az aw) = let magnitude = sqrt((ax * ax) + (ay * ay) + (az * az) + (aw * aw))
+                           in Vec4 (ax/magnitude) (ay/magnitude) (az/magnitude) (aw/magnitude)
 
-mul_V3_Num :: (Num a) => V3 a -> a -> V3 a
-mul_V3_Num (V3 x y z) n = V3 (x*n) (y*n) (z*n)
+mul_Vec3_Num :: (Num a) => Vec3 a -> a -> Vec3 a
+mul_Vec3_Num (Vec3 x y z) n = Vec3 (x*n) (y*n) (z*n)
 
-mul_V2_Num :: (Num a) => V2 a -> a -> V2 a
-mul_V2_Num (V2 x y ) n = V2 (x*n) (y*n)
+mul_Vec2_Num :: (Num a) => Vec2 a -> a -> Vec2 a
+mul_Vec2_Num (Vec2 x y ) n = Vec2 (x*n) (y*n)
 
-x_V2 :: V2 a -> a
-x_V2 (V2 x y) = x
+x_Vec2 :: Vec2 a -> a
+x_Vec2 (Vec2 x y) = x
 
-y_V2 :: V2 a -> a
-y_V2 (V2 x y) = y
+y_Vec2 :: Vec2 a -> a
+y_Vec2 (Vec2 x y) = y
 
-x_V3 :: V3 a -> a
-x_V3 (V3 x y z) = x
+x_Vec3 :: Vec3 a -> a
+x_Vec3 (Vec3 x y z) = x
 
-y_V3 :: V3 a -> a
-y_V3 (V3 x y z) = y
+y_Vec3 :: Vec3 a -> a
+y_Vec3 (Vec3 x y z) = y
 
-z_V3 :: V3 a -> a
-z_V3 (V3 x y z) = z
+z_Vec3 :: Vec3 a -> a
+z_Vec3 (Vec3 x y z) = z
 
-x_V4 :: V4 a -> a
-x_V4 (V4 x y z w) = x
+x_Vec4 :: Vec4 a -> a
+x_Vec4 (Vec4 x y z w) = x
 
-y_V4 :: V4 a -> a
-y_V4 (V4 x y z w) = y
+y_Vec4 :: Vec4 a -> a
+y_Vec4 (Vec4 x y z w) = y
 
-z_V4 :: V4 a -> a
-z_V4 (V4 x y z w) = z
+z_Vec4 :: Vec4 a -> a
+z_Vec4 (Vec4 x y z w) = z
 
-w_V4 :: V4 a -> a
-w_V4 (V4 x y z w) = w
+w_Vec4 :: Vec4 a -> a
+w_Vec4 (Vec4 x y z w) = w
 
 
 class Selectable f where
@@ -125,16 +126,16 @@ class Selectable f where
 
 
 
-instance Selectable V2  where
-    (V2 x y) !! n  = case n of  0 -> x
+instance Selectable Vec2  where
+    (Vec2 x y) !! n  = case n of  0 -> x
                                 1 -> y
 
-instance Selectable V3  where
-    (V3 x y z) !! n  = case n of    0 -> x
+instance Selectable Vec3  where
+    (Vec3 x y z) !! n  = case n of    0 -> x
                                     1 -> y
                                     2 -> z
-instance Selectable V4  where
-    (V4 x y z w) !! n  = case n of      0 -> x
+instance Selectable Vec4  where
+    (Vec4 x y z w) !! n  = case n of      0 -> x
                                         1 -> y
                                         2 -> z
                                         3 -> w
@@ -145,12 +146,12 @@ instance Selectable V4  where
 --                                     2 -> c
 
 
--- (!!) :: V3 a -> Int -> a
--- (V3 x y z) !! n  = case n of  0 -> x
+-- (!!) :: Vec3 a -> Int -> a
+-- (Vec3 x y z) !! n  = case n of  0 -> x
 --                               1 -> y
 --                               2 -> z
--- (!!) :: V4 a -> Int -> a
--- (V4 x y z w) !! n  = case n of  0 -> x
+-- (!!) :: Vec4 a -> Int -> a
+-- (Vec4 x y z w) !! n  = case n of  0 -> x
 --                                 1 -> y
 --                                 2 -> z
 --                                 3 -> w

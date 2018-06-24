@@ -20,6 +20,7 @@ import qualified Data.ByteString as B
 import Codec.Picture
 import Codec.Picture.Types
 import Data.Vector.Storable as V
+import Data.Vec
 
 -- data TGA_Header_t = TGA_Header_t {  idlength :: Char,
 --                                 colormaptype :: Char,

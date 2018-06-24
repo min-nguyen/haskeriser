@@ -22,7 +22,7 @@ import SDL (($=))
 import System.IO
 import qualified SDL
 import Control.Lens
-
+import Data.Vec
 import Data.List.Split
 import TGA
 import Util
@@ -34,10 +34,10 @@ import Light
 
 
 
-data Model = Model {verts       :: V.Vector (V3 Double, Int),
-                    faces       :: V.Vector ([(V3 Integer, Int)]),
-                    norms       :: V.Vector (V3 Double, Int),
-                    uvs         :: V.Vector (V2 Double, Int),
+data Model = Model {verts       :: V.Vector (Vec3 Double, Int),
+                    faces       :: V.Vector ([(Vec3 Integer, Int)]),
+                    norms       :: V.Vector (Vec3 Double, Int),
+                    uvs         :: V.Vector (Vec2 Double, Int),
                     diffuse_map :: TGA_Header,
                     nfaces :: Int,
                     nverts :: Int}
@@ -48,28 +48,28 @@ load_model = do
     content <- readFile (args !! 0)
     let linesOfFile = lines content
     
-        verts = stringListToV3List $ concat $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of   (x:y:_) -> x == 'v' && y == ' '
+        verts = stringListToVec3List $ concat $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of   (x:y:_) -> x == 'v' && y == ' '
                                                                                                                 _ -> False)) linesOfFile
 
-        norms = stringListToV3List $ concat $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of   (x:y:_) -> x == 'v' && y == 'n'
+        norms = stringListToVec3List $ concat $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of   (x:y:_) -> x == 'v' && y == 'n'
                                                                                                                 _ -> False)) linesOfFile
 
-        uvs   = stringListToV2List $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of    (x:y:xs) -> x == 'v' && y == 't'
+        uvs   = stringListToVec2List $ map ((filter valid_obj_num) . words) $ filter (\l -> (case l of    (x:y:xs) -> x == 'v' && y == 't'
                                                                                                         _ -> False)) linesOfFile
         
         faces1 =    map2 ((filter valid_obj_num) . (words) . (map (\c -> if (c == '/') then ' ' else c)) ) $ 
                                 map words $ filter (\l -> (case l of (x:xs) -> x == 'f'
                                                                      _ -> False)) linesOfFile
                                                                      
-        faces2 = stringListToV3ListI [z | x <- faces1, z <- x, not (null z)]
+        faces2 = stringListToVec3ListI [z | x <- faces1, z <- x, not (null z)]
         faces3 = chunksOf 3 $ map (\n -> (n - 1)) faces2
 
         nats = 1 : map (+1) (nats)
 
-        faces'' = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(V3 Integer, Int)])
-        verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (V3 Double, Int)
-        norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (V3 Double, Int)
-        uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (V2 Double, Int)
+        faces'' = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(Vec3 Integer, Int)])
+        verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec3 Double, Int)
+        norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec3 Double, Int)
+        uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec2 Double, Int)
 
     diffuse_map <- read_tga "resources/african_head_diffuse.tga"
     
@@ -78,21 +78,21 @@ load_model = do
 
 
 model_face :: Model -> Int -> [Integer]
-model_face model ind = [x | face_v3 <- ((faces model) V.! ind), let V3 x y z = fst face_v3]
+model_face model ind = [x | face_Vec3 <- ((faces model) V.! ind), let Vec3 x y z = fst face_Vec3]
 
-model_vert :: Model -> Int -> V3 Double
+model_vert :: Model -> Int -> Vec3 Double
 model_vert model ind = fst $ (verts model) V.! ind
 
-model_uv :: Model -> Int -> Int -> V2 Int
-model_uv model iface nvert = let V3 x y z = fst $ ((faces model) V.! iface) !! nvert
-                                 V2 x' y' = fst $ (uvs model) V.! ( fromIntegral y)
-                             in  V2  (floor (x' * (fromIntegral $ TGA.width $ diffuse_map model)))  (floor (y' * (fromIntegral $ TGA.height $ diffuse_map model))) ----- UPDATE THIS
+model_uv :: Model -> Int -> Int -> Vec2 Int
+model_uv model iface nvert = let Vec3 x y z = fst $ ((faces model) V.! iface) !! nvert
+                                 Vec2 x' y' = fst $ (uvs model) V.! ( fromIntegral y)
+                             in  Vec2  (floor (x' * (fromIntegral $ TGA.width $ diffuse_map model)))  (floor (y' * (fromIntegral $ TGA.height $ diffuse_map model))) ----- UPDATE THIS
 
-model_diffuse :: Model -> V2 Int -> V4 Word8
-model_diffuse model (V2 u v) = let  dm = diffuse_map model
+model_diffuse :: Model -> Vec2 Int -> Vec4 Word8
+model_diffuse model (Vec2 u v) = let  dm = diffuse_map model
                                     image = img dm
                                     PixelRGB8 r g b = pixelAt image u v
-                                in V4 r g b 255
+                                in Vec4 r g b 255
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False
