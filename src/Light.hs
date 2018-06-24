@@ -22,6 +22,7 @@ import Control.Lens
 import Data.List.Split
 import Data.Vec as Vec
 import Types
+import Util
 
 load_light :: IO Light
-load_light = return $ Light (Vec.fromList [0, 0, (-1)])
+load_light = return $ Light (toVec3D 0.0 0.0 (-1.0))

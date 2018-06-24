@@ -19,7 +19,8 @@ import qualified SDL
 import SDL_Aux
 import Control.Lens
 import Types
+import Util
 
 load_camera :: IO Camera
 load_camera = do
-    return $ Camera (Vec.fromList [0, 0, 3, 1])   
+    return $ Camera (toVec4D 0.0 0.0 3.0 1.0)   

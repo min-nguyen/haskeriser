@@ -8,6 +8,7 @@ import Prelude hiding (any, mapM_)
 import SDL.Vect
 import SDL (($=))
 import qualified SDL
+import Debug.Trace as Trace
 import Data.Word8
 import qualified Data.Vector as V
 import Data.Cross
@@ -37,27 +38,27 @@ draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (I
 draw_triangle (Rasteriser model screen camera light ) shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py zbuffer = 
     let 
         -- Screen Coordinates
-        [vertex_0, vertex_1, vertex_2] = Vec.toList screen_vertices
-        [(x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)] = map fromVec4 [vertex_0, vertex_1, vertex_2]
-
+        (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
+        [(x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)] = map fromVec4D [vertex_0, vertex_1, vertex_2]
+       
         -- Coordinate Attributes
-        c = barycentric ((projectVec4to2 (multms4 vertex_0 (1.0/w0) )), (projectVec4to2 (multms4 vertex_1  (1.0/w1))), (projectVec4to2 (multms4 vertex_2 (1.0/w2)))) (toVec2 (to_double px) (to_double py))
+        c = (barycentric ((projectVec4to2 (multms4 vertex_0 (1.0/w0) )), (projectVec4to2 (multms4 vertex_1  (1.0/w1))), (projectVec4to2 (multms4 vertex_2 (1.0/w2)))) (toVec2D (to_double px) (to_double py)))
         z = (z0 * getElem 0 c) + (z1 * getElem 1 c) + (z2 * getElem 2 c) 
         w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
-        frag_depth = z/w
-
+        frag_depth = (z/w) :: Double
+        
     in 
           -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
-        if (getElem 0 c < 0 || getElem 1 c < 0 || getElem 2 c < 0 || fst (zbuffer V.! (px + py * (width_i screen))) > frag_depth )
-            then recurseVertex zbuffer shader
+        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 || fst (zbuffer V.! (px + py * (width_i screen))) > frag_depth )
+            then  (recurseVertex zbuffer shader)
             else let (rgba , updated_shader) = fragment_shade shader model c (toVec4 0 0 0 0)
                      updated_zbuffer = replaceAt  (frag_depth, rgba) (px + py * (width_i screen)) zbuffer
                  in  recurseVertex updated_zbuffer updated_shader
         where
             recurseVertex new_zbuff new_shader 
-              | px > bbox_max_x && py >= bbox_max_y   =  (new_zbuff, new_shader)
-              | px > bbox_max_x && py <  bbox_max_y   =  draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1) new_zbuff 
-              | px <= bbox_max_x                      =  draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py new_zbuff             
+              | py >= bbox_max_y                        =  ((new_zbuff, new_shader))
+              | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1) new_zbuff) 
+              | px < bbox_max_x && py <  bbox_max_y     =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py new_zbuff)             
 
 
 

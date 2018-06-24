@@ -18,7 +18,7 @@ import Util
 
 -- # Triangle Vertices v0 v1 Vec2 -> Queried Point p -> Barycentric Coordinates
 barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
-barycentric (v0, v1, v2) p = if abs b2 < 1 then (toVec3 (-1) 1 1) else toVec3 (1 - (b0 + b1)/b2) (b1/b2) (b0/b2)
+barycentric (v0, v1, v2) p = if (abs b2) < 0.025 then (toVec3D (-1.0) 1.0 1.0) else toVec3D (1.0 - (b0 + b1)/b2) (b1/b2) (b0/b2)
                         where  (b0, b1, b2) = cross3(v2x - v0x, v1x - v0x, v0x - px) (v2y - v0y, v1y - v0y, v0y - py)
                                (px , py ) = fromVec2D p 
                                (v0x, v0y) = fromVec2D v0
@@ -26,7 +26,7 @@ barycentric (v0, v1, v2) p = if abs b2 < 1 then (toVec3 (-1) 1 1) else toVec3 (1
                                (v2x, v2y) = fromVec2D v2
 
 projection_matrix :: Camera -> Vec4 (Vec4 Double)
-projection_matrix cam = set n3 (Vec.fromList [0, 0, -1/z, 1]) identity
+projection_matrix cam = Vec.set n3 (toVec4D 0.0 0.0 (-1.0/z) 1.0) identity
                         where  (x, y, z, w) = fromVec4D $ position cam
 
 

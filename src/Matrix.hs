@@ -72,7 +72,7 @@ import Util
 --                 in (va, vb, vc, vd)
 
 or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
-or_Vec3 (a) (b) = toVec3 (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
+or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
             where (ax, ay, az) = fromVec3D a
                   (bx, by, bz) = fromVec3D b
 

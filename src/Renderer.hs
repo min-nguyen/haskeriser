@@ -41,11 +41,19 @@ draw_loop rasteriser shader = do
     let (Rasteriser model screen camera light) = rasteriser
         zbuffer         = load_zbuffer rasteriser
         shadowbuffer    = load_shadowbuffer rasteriser
-
+        modelviewx       = toVec4 (toVec4D 5.0 4.0 0.0 0.0) (toVec4D 0.0 3.0 2.0 0.0) (toVec4D 0.0 0.0 3.0 3.0) (toVec4D 0.0 0.0 2.0 1.0)
+        viewportx        = toVec4 (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0) (toVec4D 3.0 3.0 3.0 3.0)
+        k = multmm modelviewx viewportx
     --------    Get [(screen coordinates of face vertex, world coordinates of face vertex)] of each face
     
+    print $ show k
+
+
+
     let zbuff' = process_triangles zbuffer rasteriser shader 0
+    print "done"
     render_screen (screen) zbuff'
+    print "done"
     return ()
 
 
@@ -53,8 +61,8 @@ draw_loop rasteriser shader = do
 process_triangles :: ZBuffer -> Rasteriser -> Shader -> Int -> ZBuffer
 process_triangles zbuff rasteriser shader iface = go 
     where go =  if (iface > (nfaces (getModel rasteriser) - 1)) 
-                then zbuff 
-                else let (zbuff', shader') = process_triangle zbuff rasteriser shader iface
+                then  zbuff 
+                else let (zbuff', shader') = (process_triangle zbuff rasteriser shader iface)
                      in (process_triangles zbuff' rasteriser shader' (iface + 1) )
                      
 process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> (ZBuffer, Shader)
@@ -67,27 +75,35 @@ process_triangle zbuff rasteriser shader iface  =
                                              (lookat_shader (Vec.normalize $ direction light) center up shader))) :: Shader
 
                         -- in 
+
+
                             ----------- VERTEX SHADER -----------
-                            vertex_shader nthvert t_vertices t_shader = if iface > 2 then (t_vertices, t_shader)
-                                                                        else let (vertex', shader') = vertex_shade shader model iface nthvert
-                                                                             in  vertex_shader (nthvert + 1) (vertex' : t_vertices) shader'
+                            (zeroth_vertex, zeroth_shader) = vertex_shade new_shader model iface 0 
+                            (vertexes, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader model iface nth_vertex  :: ( (Vec4 Double), Shader)
+                                                                                                       in  (vs:vert_coords, folded_shader'))) (zeroth_vertex:[], zeroth_shader) [1, 2]) :: ( [Vec4 Double], Shader)
+                                                                         
 
 
 
-                            ([vertex_x, vertex_y, vertex_z], shader') = (vertex_shader 0 [] new_shader) ::  ([Vec4 Double], Shader)
-                            (screen_coordinates, shader'') = (Vec.fromList [vertex_x, vertex_y, vertex_z], shader') :: ((Vec3 (Vec4 Double)), Shader)
+                            (vertex_x, vertex_y, vertex_z) = fromVec3 $ Vec.fromList vertexes
+                            (screen_coordinates, shader'') =  (toVec3 vertex_x vertex_y vertex_z, shader')  :: ((Vec3 (Vec4 Double)), Shader)
 
                             ----------- * TRIANGLE * -----------
                             -----------   SET BBOX -----------
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  ((-1000000.0), (-1000000.0)) [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates ) ), (Vec.minimum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  ((1000000.0), (1000000.0))   [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates) ), (Vec.maximum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
+                                            ((-1000000.0), (-1000000.0)) 
+                                            [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates ) ), (Vec.minimum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
+
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  
+                                            ((1000000.0), (1000000.0))   
+                                            [ (  (Vec.getElem 0 (Vec.getElem i screen_coordinates) ), (Vec.maximum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2]]
                         
                             --------------------------------------
                             
-                            (updated_zbuff, updated_shader) = draw_triangle rasteriser shader screen_coordinates    (floor $ fst bboxmin, floor $ fst bboxmax) 
-                                                                                                                    (floor $ snd bboxmin, floor $ snd bboxmax) 
-                                                                                                                    (floor $ fst bboxmin) 
-                                                                                                                    (floor $ snd bboxmin) zbuff
+                            (updated_zbuff, updated_shader) = draw_triangle rasteriser shader'' screen_coordinates      (floor $ fst bboxmin, floor $ fst bboxmax) 
+                                                                                                                        (floor $ snd bboxmin, floor $ snd bboxmax) 
+                                                                                                                        (floor $ fst bboxmin) 
+                                                                                                                        (floor $ snd bboxmin) zbuff
                                                 
 
 
@@ -95,10 +111,12 @@ process_triangle zbuff rasteriser shader iface  =
 
 render_screen :: Screen -> ZBuffer -> IO [()]
 render_screen screen zbuffer =  do
+                print zbuffer 
                 mapM (\index -> do 
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
                                     rgba = vec4ToV4 $ snd $ zbuffer V.! index
+                                print (px,py)
                                 sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
 
 
