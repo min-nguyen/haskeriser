@@ -37,8 +37,7 @@ import Model
 import Types
 
 
-debug :: (Show a) => a -> b -> b
-debug x f =   Trace.trace (show x) f
+
 
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
@@ -101,7 +100,7 @@ process_triangle zbuff rasteriser shader iface  =
                         
                             --------------------------------------
                             
-                            (updated_zbuff, updated_shader) =                            (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
+                            (updated_zbuff, updated_shader) =           (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
                                                                                                                                                 (floor $ snd bboxmin, floor $ snd bboxmax) 
                                                                                                                                                 (floor $ fst bboxmin) 
                                                                                                                                                 (floor $ snd bboxmin) zbuff)
@@ -112,7 +111,6 @@ process_triangle zbuff rasteriser shader iface  =
 
 render_screen :: Screen -> ZBuffer -> IO [()]
 render_screen screen zbuffer =  do
-                print zbuffer 
                 mapM (\index -> do 
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 

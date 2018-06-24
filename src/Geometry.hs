@@ -16,14 +16,32 @@ import Matrix
 import Types
 import Util
 
--- # Triangle Vertices v0 v1 Vec2 -> Queried Point p -> Barycentric Coordinates
+-- -- # Triangle Vertices v0 v1 Vec2 -> Queried Point p -> Barycentric Coordinates
+-- barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
+-- barycentric (v0, v1, v2) p = if (abs b2) < 0.025 then debug b2 (toVec3D (-1.0) 1.0 1.0) else (toVec3D (1.0 - (b0 + b1)/b2) (b1/b2) (b0/b2))
+--                         where  (b0, b1, b2) = cross3(v2x - v0x, v1x - v0x, v0x - px) (v2y - v0y, v1y - v0y, v0y - py)
+--                                (px , py ) = fromVec2D p 
+--                                (v0x, v0y) = fromVec2D v0
+--                                (v1x, v1y) = fromVec2D v1 
+--                                (v2x, v2y) = fromVec2D v2
+
+
 barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
-barycentric (v0, v1, v2) p = if (abs b2) < 0.025 then (toVec3D (-1.0) 1.0 1.0) else toVec3D (1.0 - (b0 + b1)/b2) (b1/b2) (b0/b2)
-                        where  (b0, b1, b2) = cross3(v2x - v0x, v1x - v0x, v0x - px) (v2y - v0y, v1y - v0y, v0y - py)
-                               (px , py ) = fromVec2D p 
-                               (v0x, v0y) = fromVec2D v0
-                               (v1x, v1y) = fromVec2D v1 
-                               (v2x, v2y) = fromVec2D v2
+barycentric (a, b, c) p = let v0 = b - a
+                              v1 = c - a
+                              v2 = p - a
+                              d00 = Vec.dot v0 v0
+                              d01 = Vec.dot v0 v1
+                              d11 = Vec.dot v1 v1
+                              d20 = Vec.dot v2 v0
+                              d21 = Vec.dot v2 v1
+                              denom = d00 * d11 - d01 * d01
+                              v = (d11 * d20 - d01 * d21)/denom
+                              w = (d00 * d21 - d01 * d20)/denom
+                              u = 1.0 - v - w
+                          in if (u + w + v) > 0.99
+                             then toVec3D u v w
+                             else toVec3D (-1.0) 1.0 1.0
 
 projection_matrix :: Camera -> Mat44 Double
 projection_matrix cam = Vec.set n3 (toVec4D 0.0 0.0 (-1.0/z) 1.0) identity
