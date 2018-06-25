@@ -162,17 +162,17 @@ embedVec3to4D v3 = let (x,y,z) = fromVec3D v3 in toVec4D x y z 1.0
 embedVec3to4 :: (Num a) =>  Vec3 a -> Vec4 a
 embedVec3to4 v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
 
-multvs2 :: (Num a) => Vec2 a -> a -> Vec2 a
-multvs2 m s = let vs = Vec.toList m
-              in Vec.fromList $ map (s*) vs
+mult_v2_num :: (Num a) => Vec2 a -> a -> Vec2 a
+mult_v2_num m s = let vs = Vec.toList m
+                  in Vec.fromList $ map (s*) vs
 
-multvs3 :: (Num a) => Vec3 a -> a -> Vec3 a
-multvs3 m s = let vs = Vec.toList m
-              in Vec.fromList $ map (s*) vs
+mult_v3_num :: (Num a) => Vec3 a -> a -> Vec3 a
+mult_v3_num m s = let vs = Vec.toList m
+                  in Vec.fromList $ map (s*) vs
 
-multvs4 :: (Num a) => Vec4 a -> a -> Vec4 a
-multvs4 m s = let vs = Vec.toList m
-              in Vec.fromList $ map (s*) vs
+mult_v4_num :: (Num a) => Vec4 a -> a -> Vec4 a
+mult_v4_num m s = let vs = Vec.toList m
+                  in Vec.fromList $ map (s*) vs
 
 or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
 or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
@@ -183,10 +183,10 @@ or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - a
      --- | |                        RGBA Arithmetic                         | | ---
       --- ‾------------------------------------------------------------------‾---
   
-mult_rgba ::  Vec4 Word8 -> Double -> Vec4 Word8
-mult_rgba rgba intensity = let  (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
-                           in if intensity > 1.0 then rgba else if intensity < 0.0 then toVec4 0 0 0 0 else (   let  (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (intensity *)) (r, g, b, a)
-                                                                                                                in toVec4 r' g' b' a'   )
+mult_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
+mult_rgba_d rgba intensity =  let  (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
+                              in if intensity > 1.0 then rgba else if intensity < 0.0 then toVec4 0 0 0 0 else (  let  (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (intensity *)) (r, g, b, a)
+                                                                                                                  in toVec4 r' g' b' a'  )
 
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---

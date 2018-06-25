@@ -95,17 +95,21 @@ process_triangle zbuff rasteriser shader iface  =
 
                             -----------   SET BBOX -----------
 
+                            fetchx i = getElem 0 (getElem i screen_coordinates )
+                            fetchy i = getElem 1 (getElem i screen_coordinates )
+                            fetchw i = getElem 3 (getElem i screen_coordinates )
+
                             bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
-                                            ((1000000.0), (1000000.0)) 
-                                            [ (  (getElem 0 (getElem i screen_coordinates ) ), (Vec.minimum $ (getElem i screen_coordinates)) ) |  i <- [0,1,2] ]
+                                            (1000000.0, 1000000.0)
+                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i)  ) |  i <- [0,1,2] ]
 
                             bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  
                                             ((-1000000.0), (-1000000.0))   
-                                            [ (  (getElem 0 (getElem i screen_coordinates) ), (Vec.maximum $ (getElem i screen_coordinates)) )  |  i <- [0,1,2] ]
+                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i) ) |  i <- [0,1,2] ]
                         
                             --------------------------------------
                             
-                            (updated_zbuff, updated_shader) =           (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
+                            (updated_zbuff, updated_shader) =   (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
                                                                                                                                                 (floor $ snd bboxmin, floor $ snd bboxmax) 
                                                                                                                                                 (floor $ fst bboxmin) 
                                                                                                                                                 (floor $ snd bboxmin) zbuff)
@@ -120,8 +124,8 @@ render_screen screen zbuffer =
                                 let px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
                                     rgba = vec4ToV4 $ snd $ zbuffer V.! index
-                                print (px,py)
-                                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba)) [0 .. (length zbuffer - 1)]        
+                                
+                                (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length zbuffer - 1)]        
 
 
 

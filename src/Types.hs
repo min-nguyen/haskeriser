@@ -19,7 +19,7 @@ import SDL.Vect
 import SDL (($=))
 import qualified SDL
 import qualified Data.Vector as V
-import Data.Vec
+import Data.Vec as Vec
 import Foreign.C.Types
 import Data.Word8
 import Data.Binary.Get
@@ -28,10 +28,10 @@ import Control.Applicative
 import Control.Monad (liftM, ap)
 import Control.Monad.State
 import qualified Data.ByteString as B
-import Data.Vector.Storable as ST
+import qualified Data.Vector.Storable as ST
 import Codec.Picture
 import Codec.Picture.Types
-
+import Util
 
 
 
@@ -57,17 +57,48 @@ newtype Kernel s a = Kernel  {
                                 runKernel       ::   s -> (a, s)
                              }
 
-data Shader  =       Shader { 
-                                modelview       ::  Vec4 (Vec4 Double),
-                                viewport        ::  Vec4 (Vec4 Double),
-                                projection      ::  Vec4 (Vec4 Double),
-                                uniform_M       ::  Vec4 (Vec4 Double),
-                                uniform_MIT     ::  Vec4 (Vec4 Double),
-                                uniform_Mshadow ::  Vec4 (Vec4 Double),
-                                varying_uv      ::  Vec2 (Vec3 Double),
-                                varying_tri     ::  Vec3 (Vec3 Double)
-                               
-                            }            
+
+data Shader =   DepthShader {
+                                modelview   :: Mat44 Double,
+                                viewport    :: Mat44 Double,
+                                projection  :: Mat44 Double,
+                                varying_tri :: Mat33 Double
+                            }
+
+
+-- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
+-- |      FINISH INTEGRATING NEW DEPTH SHADER DATA TYPE                     | -- 
+--  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  --                                  
+
+vertex_shade :: Shader -> Model -> Int -> Int -> (Vec4 Double, Shader)
+vertex_shade (DepthShader modelview viewport projection varying_tri) = 
+                    \model iface nthvert ->     let shader = DepthShader
+                                                    gl_vert = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
+                                                    gl_Vertex = ((multmv (viewport shader)) . (multmv (projection shader)) . (multmv (modelview shader))) gl_vert  :: Vec4 Double
+                                                    w = (1.0/(getElem 2 gl_Vertex)) :: Double
+                                                    new_col =  mult_v3_num (projectVec4to3D gl_Vertex) w
+                                                    new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri shader) 
+                                                in (gl_Vertex, shader {varying_tri = new_varying_tri} )
+
+fragment_shade :: Shader -> Model -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
+fragment_shade shader model bary_coords rgba =  let (px, py, pz) = (fromVec3D $ multmv (varying_tri shader) bary_coords) :: (Double, Double, Double)
+                                                -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
+                                                -- |      INSERT RGBA MULTIPLICATION INTO HERE !!                           | -- 
+                                                --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  --                                    
+                                                    color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (fromIntegral $ floor (pz/rCONST_depth))
+                                                in  debug ((varying_tri shader)) (color , shader)                         
+                                                
+                                                
+load_depthshader :: Shader
+load_depthshader =  DepthShader {   modelview       = Vec.identity :: Mat44 Double,
+                                    viewport        = Vec.identity :: Mat44 Double,
+                                    projection      = Vec.identity :: Mat44 Double,
+                                    -- uniform_M       = Vec.identity :: Mat44 Double,
+                                    -- uniform_MIT     = Vec.identity :: Mat44 Double,
+                                    -- uniform_Mshadow = Vec.identity :: Mat44 Double,
+                                    -- varying_uv      = Vec.fromList $ replicate 2 (toVec3Zeros),
+                                    varying_tri     = Vec.identity :: Mat33 Double
+                                }       
 
 data Light = Light {direction   :: Vec3 Double}
 

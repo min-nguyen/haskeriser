@@ -34,9 +34,7 @@ barycentric (a, b, c) p = let v0 = b - a
                               v = (d11 * d20 - d01 * d21)/denom
                               w = (d00 * d21 - d01 * d20)/denom
                               u = 1.0 - v - w
-                          in if (u + w + v) > 0.99
-                             then toVec3D u v w
-                             else toVec3D (-1.0) 1.0 1.0
+                          in (toVec3D u v w)
 
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
@@ -53,8 +51,8 @@ viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0
 --                 EYE          CENTER        UP                                     
 lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double
 lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye - center
-                                    (x2, y2, z2) = fromVec3D $  normalize $ or_Vec3 up (toVec3 x1 y1 z1)
-                                    (x3, y3, z3) = fromVec3D $  normalize $ or_Vec3 (toVec3 x1 y1 z1) (toVec3 x2 y2 z2)
+                                    (x2, y2, z2) = fromVec3D $  normalize $ cross up (toVec3 x1 y1 z1)
+                                    (x3, y3, z3) = fromVec3D $  normalize $ cross (toVec3 x1 y1 z1) (toVec3 x2 y2 z2)
                                     (cx, cy, cz) = fromVec3D $ center
                               in matFromLists [ [x1, x3,  x2,   0],
                                                 [y1, y3,  y2,   0],
