@@ -47,10 +47,7 @@ import Types
 
 draw_loop :: Rasteriser -> Shader -> IO()
 draw_loop rasteriser shader = do
-    let (Rasteriser model screen camera light) = rasteriser
-
-        zbuffer         = load_zbuffer rasteriser
-        shadowbuffer    = load_shadowbuffer rasteriser
+    let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
 
         screen_width    = to_double $ width_i screen
         screen_height   = to_double $ height_i screen
@@ -60,29 +57,26 @@ draw_loop rasteriser shader = do
          ----------- SET UP MVP MATRICES IN SHADER -----------
         setup_shader = mvp_matrix shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up
 
-
-    let zbuff' = process_triangles zbuffer rasteriser setup_shader 0
-    print "done"
-    render_screen (screen) zbuff'
+    let (ras', shade') = process_triangles rasteriser setup_shader 0
+    
+    render_screen ras'
     print "done"
     return ()
 
 
 
-process_triangles :: ZBuffer -> Rasteriser -> Shader -> Int -> ZBuffer
-process_triangles zbuff rasteriser shader iface = go 
+process_triangles :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
+process_triangles rasteriser shader iface = go 
     where go =  if (iface > (nfaces (getModel rasteriser) - 1)) 
-                then  zbuff 
-                else let (zbuff', shader') = (process_triangle zbuff rasteriser shader iface)
-                     in (process_triangles zbuff' rasteriser shader' (iface + 1) )
+                then (rasteriser, shader)
+                else let (rasteriser', shader') = (process_triangle rasteriser shader iface)
+                     in (process_triangles rasteriser' shader' (iface + 1) )
                      
-process_triangle :: ZBuffer -> Rasteriser -> Shader -> Int -> (ZBuffer, Shader)
-process_triangle zbuff rasteriser shader iface  = 
-                        let (Rasteriser model screen camera light) = rasteriser
-                          
-                            ----------- VERTEX SHADER -----------
-                            (zeroth_vertex, zeroth_shader) = vertex_shade shader model iface 0 
-                            (vertexes, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader model iface nth_vertex  :: ( (Vec4 Double), Shader)
+process_triangle :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
+process_triangle rasteriser shader iface  = 
+                        let ----------- VERTEX SHADER -----------
+                            (zeroth_vertex, zeroth_shader) = vertex_shade shader ( rasteriser)  iface 0 
+                            (vertexes, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader ( rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
                                                                                                        in  (vs:vert_coords, folded_shader'))) (zeroth_vertex:[], zeroth_shader) [1, 2]) :: ( [Vec4 Double], Shader)
                                                                          
 
@@ -109,23 +103,25 @@ process_triangle zbuff rasteriser shader iface  =
                         
                             --------------------------------------
                             
-                            (updated_zbuff, updated_shader) =   (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
+                            (updated_rasteriser, updated_shader) =   (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
                                                                                                                                                 (floor $ snd bboxmin, floor $ snd bboxmax) 
                                                                                                                                                 (floor $ fst bboxmin) 
-                                                                                                                                                (floor $ snd bboxmin) zbuff)
+                                                                                                                                                (floor $ snd bboxmin))
                                                 
                            
 
-                        in  (updated_zbuff, updated_shader)
+                        in  (updated_rasteriser, updated_shader)
 
-render_screen :: Screen -> ZBuffer -> IO [()]
-render_screen screen zbuffer =
+render_screen :: Rasteriser -> IO [()]
+render_screen ras =
                 mapM (\index -> do 
-                                let px = index `mod` (width_i screen)
+                                let screen = getScreen ras
+                                    zbuffer = getZBuffer ras
+                                    px = index `mod` (width_i screen)
                                     py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
                                     rgba = vec4ToV4 $ snd $ zbuffer V.! index
                                 
-                                (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length zbuffer - 1)]        
+                                debug ((px,py)) (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length (getZBuffer ras) - 1)]        
 
 
 

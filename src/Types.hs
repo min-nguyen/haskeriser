@@ -33,30 +33,14 @@ import Codec.Picture
 import Codec.Picture.Types
 import Util
 
-
-
-
-data Model = Model {    
-                        verts       :: V.Vector (Vec3 Double, Int),
-                        faces       :: V.Vector ([(Vec3 Integer, Int)]),
-                        norms       :: V.Vector (Vec3 Double, Int),
-                        uvs         :: V.Vector (Vec2 Double, Int),
-                        diffuse_map :: TGA_Header,
-                        nfaces :: Int,
-                        nverts :: Int
-                    }
-
 data Rasteriser = Rasteriser {  
+                                getZBuffer     :: V.Vector (Double, Vec4 Word8),
+                                getDepthBuffer :: V.Vector (Double, Vec4 Word8),
                                 getModel       :: Model,
                                 getScreen      :: Screen,
                                 getCamera      :: Camera,
                                 getLight       :: Light
                             }
-
-newtype Kernel s a = Kernel  {  
-                                runKernel       ::   s -> (a, s)
-                             }
-
 
 data Shader =   DepthShader {
                                 modelview   :: Mat44 Double,
@@ -76,7 +60,15 @@ data Shader =   DepthShader {
                                 varying_tri     :: Mat33 Double
                             }
 
-
+data Model = Model {    
+                        verts       :: V.Vector (Vec3 Double, Int),
+                        faces       :: V.Vector ([(Vec3 Integer, Int)]),
+                        norms       :: V.Vector (Vec3 Double, Int),
+                        uvs         :: V.Vector (Vec2 Double, Int),
+                        diffuse_map :: TGA_Header,
+                        nfaces :: Int,
+                        nverts :: Int
+                    }
 -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
 -- |      FINISH INTEGRATING NEW DEPTH SHADER DATA TYPE                     | -- 
 --  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  --                                  
@@ -84,9 +76,6 @@ data Shader =   DepthShader {
 data Light = Light {direction   :: Vec3 Double}
 
 data Camera = Camera {  position :: Vec4 Double }
-
-                            -- (Width, Height) --
-data Texture = Texture SDL.Texture (V2 CInt)
 
 data Screen = Screen  { 
                         window    :: SDL.Window,
@@ -97,8 +86,11 @@ data Screen = Screen  {
                         height_i  :: {-# UNPACK #-} !Int,
                         width_i   :: {-# UNPACK #-} !Int
                       }
-
-
+                      
+data Triangle = Triangle {  
+                            points  :: (Vec4 Double, Vec4 Double, Vec4 Double),
+                            color   :: Vec4 Word8 
+                         }
 
 data TGA_Header = TGA_Header {  
                                 width   :: {-# UNPACK #-} !Int,
@@ -109,13 +101,9 @@ data TGA_Header = TGA_Header {
                              }
 				 | TGA_Error
 
-data Triangle = Triangle {  
-                            points  :: (Vec4 Double, Vec4 Double, Vec4 Double),
-                            color   :: Vec4 Word8 
-                         }
-
 data Color = Red | Blue | Yellow | Green | White | Purple
 
+data Texture = Texture SDL.Texture (V2 CInt)
 
 ---- |‾| ---------------------------------------------------------------------------- |‾| ----
 ---- | |                                                                              | | ----
@@ -130,10 +118,17 @@ rCONST_depth  :: Double
 rCONST_depth = 2000.0
 
 screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (150, 150)
+(screenWidth, screenHeight) = (400, 400)
 
 screenWidth_i, screenHeight_i :: Int
-(screenWidth_i, screenHeight_i) = (150, 150)
+(screenWidth_i, screenHeight_i) = (400, 400)
+
+
+
+
+newtype Kernel s a = Kernel  {  
+                                runKernel       ::   s -> (a, s)
+                             }
 
 get  :: Kernel s s
 get  = Kernel {runKernel = (\s -> (s, s)) }

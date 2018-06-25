@@ -36,7 +36,7 @@ import Types
 loop :: (Rasteriser -> Shader -> IO()) -> Model -> Light -> Camera -> Shader -> IO()
 loop draw_func model light camera shader = do
         screen <- sdl_init
-        let rasteriser = Rasteriser model screen camera light
+        let rasteriser = (load_rasteriser model screen camera light) :: Rasteriser
             loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
                         let quit = SDL.QuitEvent `elem` events

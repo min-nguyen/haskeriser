@@ -31,15 +31,20 @@ import Data.Vec as Vec hiding (map)
 import qualified Data.Vec as Vec  (map)
 import Types
 
-load_zbuffer :: Rasteriser -> V.Vector (Double, Vec4 Word8)
-load_zbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
+load_zbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
+load_zbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
 
-load_shadowbuffer :: Rasteriser -> V.Vector (Double, Vec4 Word8)
-load_shadowbuffer (Rasteriser model screen camera  light )  = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
+load_shadowbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
+load_shadowbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
+
+load_rasteriser :: Model -> Screen -> Camera -> Light -> Rasteriser
+load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer model screen camera light 
+                                        where zbuffer = load_zbuffer screen
+                                              depthbuffer = load_shadowbuffer screen
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
-draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int -> ZBuffer ->  (ZBuffer, Shader)
-draw_triangle (Rasteriser model screen camera light ) shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py zbuffer = 
+draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  (Rasteriser, Shader)
+draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py = 
     let 
         -- Screen Coordinates
         (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
@@ -53,16 +58,16 @@ draw_triangle (Rasteriser model screen camera light ) shader screen_vertices (bb
         
     in 
           -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
-        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 || fst (zbuffer V.! (px + py * (width_i screen))) > frag_depth )
-            then  (recurseVertex zbuffer shader)
-            else let (rgba , updated_shader) = fragment_shade shader model c (toVec4 0 0 0 0)
-                     updated_zbuffer = replaceAt  (frag_depth, rgba) (px + py * (width_i screen)) zbuffer
-                 in  recurseVertex updated_zbuffer updated_shader
+        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 ||  (fst ((getZBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth ) 
+            then  (recurseVertex rasteriser shader)
+            else let (rgba , updated_shader) = fragment_shade shader (rasteriser) c (toVec4 0 0 0 0)
+                     updated_zbuffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getZBuffer rasteriser)
+                 in  recurseVertex (rasteriser {getZBuffer = updated_zbuffer}) updated_shader
         where
-            recurseVertex new_zbuff new_shader 
-              | py >= bbox_max_y                        =  (new_zbuff, new_shader)
-              | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1) new_zbuff) 
-              | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle (Rasteriser model screen camera light ) new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py new_zbuff)             
+            recurseVertex new_rasteriser new_shader 
+              | py >= bbox_max_y                        =  (new_rasteriser, new_shader)
+              | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1)) 
+              | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)             
 
 
 
