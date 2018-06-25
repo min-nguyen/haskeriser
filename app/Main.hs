@@ -63,6 +63,6 @@ main = do
     model <- load_model
     camera <- load_camera
     light <- load_light
-    let shader = load_shader
-    loop draw_loop model light camera shader
+    let depth_shader = load_depthshader
+    loop draw_loop model light camera depth_shader
     return ()

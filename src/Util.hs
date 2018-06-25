@@ -85,6 +85,15 @@ map3 f fa = fmap (fmap (fmap f)) fa
 listToTuple3 :: [a] -> (a, a, a)
 listToTuple3 as = (as !! 0, as !! 1, as !! 2)
 
+mapVec2 :: (a -> b) -> Vec2 a -> Vec2 b
+mapVec2 f v = Vec.map f v
+
+mapVec3 :: (a -> b) -> Vec3 a -> Vec3 b
+mapVec3 f v = Vec.map f v
+
+mapVec4 :: (a -> b) -> Vec4 a -> Vec4 b
+mapVec4 f v = Vec.map f v
+
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                      Vec Unpacking/Packing                     | | ---
       --- ‾------------------------------------------------------------------‾---
@@ -140,6 +149,33 @@ fromVec4 :: Vec4 a -> (a, a, a, a)
 fromVec4 xyzw = let [x,y,z,w] = Vec.toList xyzw 
                 in (x,y,z,w)
 
+
+
+setElemV2 :: Int -> Vec2 a -> a -> Vec2 a 
+setElemV2 n v a = let (x, y) = fromVec2 v
+                  in (case n of 0 -> toVec2 a y 
+                                1 -> toVec2 x a 
+                                _ -> toVec2 x y )
+
+
+setElemV3 :: Int -> Vec3 a -> a -> Vec3 a 
+setElemV3 n v a = let (x, y, z) = fromVec3 v
+                  in (case n of 0 -> toVec3 a y z   
+                                1 -> toVec3 x a z
+                                2 -> toVec3 x y a
+                                _ -> toVec3 x y z)
+
+setElemV4 :: Int -> Vec4 a -> a -> Vec4 a 
+setElemV4 n v a = let (x, y, z, w) = fromVec4 v
+                  in (case n of 0 -> toVec4 a y z w  
+                                1 -> toVec4 x a z w
+                                2 -> toVec4 x y a w
+                                3 -> toVec4 x y z a
+                                _ -> toVec4 x y z w)
+
+
+
+
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                      Vec LinAlg & Conversions                  | | ---
       --- ‾------------------------------------------------------------------‾---
@@ -191,7 +227,7 @@ mult_rgba_d rgba intensity =  let  (r, g, b, a) = (mapTuple4 (fromIntegral) (fro
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---
       --- ‾------------------------------------------------------------------‾---
-  
+
 vec2ToV2 :: Vec2 a -> V2 a
 vec2ToV2 (x:.y:.()) = V2 x y
 
