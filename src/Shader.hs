@@ -33,7 +33,7 @@ vertex_shade :: Shader -> Rasteriser -> Int -> Int -> (Vec4 Double, Shader)
 vertex_shade (CameraShader mview vport proj uni_M uni_MIT uni_Mshadow vary_uv vary_tri) 
             ras iface nthvert = 
                 let model = getModel ras
-                    vert_uv     = (mapVec2 to_double ((model_uv model iface nthvert ) :: Vec2 Int) ) :: Vec2 Double
+                    vert_uv     = ((model_uv model iface nthvert ) :: Vec2 Double)
                     vert_coords = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
 
                     gl_Vertex = ((multmv (vport)) . (multmv (proj)) . (multmv (mview))) vert_coords  :: Vec4 Double
@@ -63,21 +63,24 @@ fragment_shade (DepthShader modelview viewport projection varying_tri) ras bary_
                                                     color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (fromIntegral $ floor (pz/rCONST_depth))
                                                 in  (color , (DepthShader modelview viewport projection varying_tri))                         
 
--- fragment_shade (CameraShader mview vport proj uni_M uni_MIT uni_Mshadow vary_uv vary_tri) model bary_coords rgba =  
---     let sb_p = (multmv uni_Mshadow (embedVec3to4 (multmv vary_tri bary_coords))) :: Vec4 Double   
---         (sb_px, sb_py, sb_pz, sb_pw) = fromVec4 (sb_p/(getElem 3 sb_p))
+-- fragment_shade (CameraShader mview vport proj uni_M uni_MIT uni_Mshadow vary_uv vary_tri) ras bary_coords rgba =  
+--     let shadowBuff = getDepthBuffer ras
+
+--         sb_p = (multmv uni_Mshadow (embedVec3to4 (multmv vary_tri bary_coords))) :: Vec4 Double   
+--         (sb_px, sb_py, sb_pz, sb_pw) = fromVec4 (mult_v4_num sb_p (1.0/(getElemV4 3 sb_p)))
 
 --         idx =  (floor sb_px) + (floor sb_py) * (screenWidth_i)
 
---         shadow = 0.3 + 0.7 * ((shadowbuffer V.! idx) < sb_pz)
+--         isVisible = if (fst(shadowBuff V.! idx) < sb_pz) then 1.0 else 0.0
+--         shadow = (0.3 + 0.7 * isVisible) :: Double
 
---         uv = vary_uv * bary_coords
---         n = Vec.normalize $ projectVec4to3 $ multmv uni_MIT (embedVec3to4 (model_normal uv))
---         l = Vec.normalize $ projectVec4to3 $ multmv uni_M (embedVec3to4 light_dir)
---         r = Vec.normalize $ n * (n * l * 2.0) - l) 
+--         uv = (multmv ((Vec.transpose :: Mat32 Double -> Mat23 Double) (vary_uv :: Mat32 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
+--         n  = (Vec.normalize $ projectVec4to3 $ multmv uni_MIT (embedVec3to4 (model_normal uv)))  :: Vec3 Double ----
+--         l  = (Vec.normalize $ projectVec4to3 $ multmv uni_M (embedVec3to4 (Vec.normalize $ direction light)))  :: Vec3 Double
+--         -- r  = (Vec.normalize $ (mult_v3_num n (mult_v3_num (multvv n l) 2.0)) - l ) :: Vec3 Double 
 
 
---         diff = max 0.0 (n * l)
+--         diff = (max 0.0 (multvv n l) ) :: Double
 
 --         (r,g,b,a) =  fromVec4 (model_diffuse uv)
 --         (r',g',b',_) = mapTuple4 (20 +) (r,g,b,a)

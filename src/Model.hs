@@ -83,17 +83,25 @@ model_face model ind = [x | face_Vec3 <- ((faces model) V.! ind), let  (x, y, z)
 model_vert :: Model -> Int -> Int -> Vec.Vec3 Double
 model_vert model iface nvert  = fst $ (verts model) V.!  ( fromIntegral $ Vec.getElem 0 $ fst ( (faces model V.! iface) !! nvert))
 
-model_uv :: Model -> Int -> Int -> Vec.Vec2 Int
-model_uv model iface nvert = let (x, y, z) = fromVec3 $ fst $ ((faces model) V.! iface) !! nvert
-                                 (x', y')  = fromVec2 $ fst $ (uvs model) V.! ( fromIntegral y)
-                             in  toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
+model_uv :: Model -> Int -> Int -> Vec.Vec2 Double
+model_uv model iface nvert = let (_, y, _)  = fromVec3 $ fst $ ((faces model) V.! iface) !! nvert
+                                 uv         = fst $ (uvs model) V.! ( fromInteger y)
+                             in  uv --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
-model_diffuse :: Model -> Vec.Vec2 Int -> Vec.Vec4 Word8
+model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
+                                (u',v') =  (floor (u * (fromIntegral (width $ diffuse_map model)))  ,  floor (v * (fromIntegral (height $ diffuse_map model)) ))
                                 dm = diffuse_map model
                                 image = img dm
-                                PixelRGB8 r g b = pixelAt image u v
+                                PixelRGB8 r g b = pixelAt image u' v'
                          in toVec4 r g b 255
+
+-- model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
+-- model_normal model uv = let (u, v)      =   fromVec2 uv
+--                             scaledV2    =   toVec2  ( u * (fromIntegral (width $ normal_map model)) )  ( v * (fromIntegral (height $ normal_map model)) )
+--                             color = normal_map model uv
+--                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 - 1.0) (((getElemV4 1 color)/255.0) * 2.0 - 1.0) (((getElemV4 0 color)/255.0) * 2.0 - 1.0)
+--                         in  rgb
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False

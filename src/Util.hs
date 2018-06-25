@@ -173,6 +173,26 @@ setElemV4 n v a = let (x, y, z, w) = fromVec4 v
                                 3 -> toVec4 x y z a
                                 _ -> toVec4 x y z w)
 
+getElemV2 :: Int -> Vec2 a -> a 
+getElemV2 n v   = let (x, y) = fromVec2 v
+                  in (case n of 0 -> x
+                                1 -> y
+                                _ -> x)
+
+getElemV3 :: Int -> Vec3 a -> a
+getElemV3 n v = let (x, y, z) = fromVec3 v
+                  in (case n of 0 -> x
+                                1 -> y
+                                2 -> z
+                                _ -> x)
+
+getElemV4 :: Int -> Vec4 a -> a 
+getElemV4 n v   = let (x, y, z, w) = fromVec4 v
+                  in (case n of 0 -> x
+                                1 -> y
+                                2 -> z
+                                3 -> w
+                                _ -> x)
 
 
 
