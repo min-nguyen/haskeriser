@@ -91,27 +91,23 @@ fragment_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow 
 
 
 load_depthshader :: Shader
-load_depthshader =  DepthShader {   modelview       = Vec.identity :: Mat44 Double,
-                                    viewport        = Vec.identity :: Mat44 Double,
-                                    projection      = Vec.identity :: Mat44 Double,
-                                    mvp             = Vec.identity :: Mat44 Double,
-                                    -- uniform_M       = Vec.identity :: Mat44 Double,
-                                    -- uniform_MIT     = Vec.identity :: Mat44 Double,
-                                    -- uniform_Mshadow = Vec.identity :: Mat44 Double,
-                                    -- varying_uv      = Vec.fromList $ replicate 2 (toVec3Zeros),
-                                    varying_tri     = Vec.identity :: Mat33 Double
+load_depthshader =  DepthShader {   getModelview       = Vec.identity :: Mat44 Double,
+                                    getViewport        = Vec.identity :: Mat44 Double,
+                                    getProjection      = Vec.identity :: Mat44 Double,
+                                    getMVP             = Vec.identity :: Mat44 Double,
+                                    getCurrentTri     = Vec.identity :: Mat33 Double
                                 }       
 
 load_camerashader :: Shader
-load_camerashader =  CameraShader {     modelview       = Vec.identity :: Mat44 Double,
-                                        viewport        = Vec.identity :: Mat44 Double,
-                                        projection      = Vec.identity :: Mat44 Double,
-                                        mvp             = Vec.identity :: Mat44 Double,
-                                        uniform_M       = Vec.identity :: Mat44 Double,
-                                        uniform_MIT     = Vec.identity :: Mat44 Double,
-                                        uniform_Mshadow = Vec.identity :: Mat44 Double,
-                                        varying_uv      = Vec.fromList $ replicate 3 (toVec2Zeros),
-                                        varying_tri     = Vec.identity :: Mat33 Double
+load_camerashader =  CameraShader {     getModelview       = Vec.identity :: Mat44 Double,
+                                        getViewport        = Vec.identity :: Mat44 Double,
+                                        getProjection      = Vec.identity :: Mat44 Double,
+                                        getMVP             = Vec.identity :: Mat44 Double,
+                                        getUniformM       = Vec.identity :: Mat44 Double,
+                                        getUniformMIT     = Vec.identity :: Mat44 Double,
+                                        getUniformMshadow = Vec.identity :: Mat44 Double,
+                                        getCurrentUV      = Vec.fromList $ replicate 3 (toVec2Zeros),
+                                        getCurrentTri     = Vec.identity :: Mat33 Double
                                   }       
 
 

@@ -43,40 +43,37 @@ data Rasteriser = Rasteriser {
                             }
 
 data Shader =   DepthShader {
-                                modelview   :: Mat44 Double,
-                                viewport    :: Mat44 Double,
-                                projection  :: Mat44 Double,
-                                mvp         :: Mat44 Double,
-                                varying_tri :: Mat33 Double
+                                getModelview   :: Mat44 Double,
+                                getViewport    :: Mat44 Double,
+                                getProjection  :: Mat44 Double,
+                                getMVP         :: Mat44 Double,
+                                getCurrentTri  :: Mat33 Double
                             }
                 | CameraShader 
                             {
-                                modelview       :: Mat44 Double,
-                                viewport        :: Mat44 Double,
-                                projection      :: Mat44 Double,
-                                mvp             :: Mat44 Double,
-                                uniform_M       :: Mat44 Double,
-                                uniform_MIT     :: Mat44 Double,
-                                uniform_Mshadow :: Mat44 Double,
-                                varying_uv      :: Mat32 Double,
-                                varying_tri     :: Mat33 Double
+                                getModelview      :: Mat44 Double,
+                                getViewport       :: Mat44 Double,
+                                getProjection     :: Mat44 Double,
+                                getMVP            :: Mat44 Double,
+                                getUniformM       :: Mat44 Double,
+                                getUniformMIT     :: Mat44 Double,
+                                getUniformMshadow :: Mat44 Double,
+                                getCurrentUV      :: Mat32 Double,
+                                getCurrentTri     :: Mat33 Double
                             }
 
 data Model = Model {    
-                        verts       :: V.Vector (Vec3 Double, Int),
-                        faces       :: V.Vector ([(Vec3 Integer, Int)]),
-                        norms       :: V.Vector (Vec3 Double, Int),
-                        uvs         :: V.Vector (Vec2 Double, Int),
-                        nfaces :: Int,
-                        nverts :: Int,
-                        diffuse_map :: TGA_Header,
-                        normal_map :: NORMAL_MAP
+                        getVerts       :: V.Vector (Vec3 Double, Int),
+                        getFaces       :: V.Vector ([(Vec3 Integer, Int)]),
+                        getNorms       :: V.Vector (Vec3 Double, Int),
+                        getUVs         :: V.Vector (Vec2 Double, Int),
+                        getNumFaces :: Int,
+                        getNumVerts :: Int,
+                        getDiffuseMap :: ColorMap,
+                        getNormalMap :: NormalMap
                     }
--- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
--- |      FINISH INTEGRATING NEW DEPTH SHADER DATA TYPE                     | -- 
---  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  --                                  
 
-data Light = Light {direction   :: Vec3 Double}
+data Light  = Light {   direction   :: Vec3 Double}
 
 data Camera = Camera {  position :: Vec4 Double }
 
@@ -95,23 +92,23 @@ data Triangle = Triangle {
                             color   :: Vec4 Word8 
                          }
 
-data TGA_Header = TGA_ColorMap  {  
+data ColorMap =  ColorMap  {  
                                     imgwidth   :: {-# UNPACK #-} !Int,
                                     imgheight  :: {-# UNPACK #-} !Int,
                                     imgdata    :: ST.Vector (PixelBaseComponent PixelRGB8),
                                     imgbbp     :: Int,
                                     img        :: Image PixelRGB8
                                 }
-				 | TGA_Error
+				 | ColorMapError
 
-data NORMAL_MAP = NormalMap {
+data NormalMap = NormalMap {
                                 normwidth   :: {-# UNPACK #-} !Int,
                                 normheight  :: {-# UNPACK #-} !Int,
                                 normdata    :: ST.Vector (PixelBaseComponent PixelRGBA8) ,
                                 normbbp     :: Int,
                                 normimg     :: Image PixelRGBA8
                             }
-                 | NormalError
+                 | NormalMapError
 
 data Color = Red | Blue | Yellow | Green | White | Purple
 

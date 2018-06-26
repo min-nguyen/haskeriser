@@ -71,7 +71,7 @@ load_model = do
         norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
    
-    diffuse_map_file <- read_tga "resources/african_head_diffuse.tga"
+    diffuse_map_file <- read_tga_color "resources/african_head_diffuse.tga"
     normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
 
     -- case normal_map_file of 
@@ -86,28 +86,28 @@ load_model = do
 
 
 model_face :: Model -> Int -> [Integer]
-model_face model ind = [x | face_Vec3 <- ((faces model) V.! ind), let  (x, y, z) = fromVec3 (fst face_Vec3)]
+model_face model ind = [x | face_Vec3 <- ((getFaces model) V.! ind), let  (x, y, z) = fromVec3 (fst face_Vec3)]
 
 model_vert :: Model -> Int -> Int -> Vec.Vec3 Double
-model_vert model iface nvert  = fst $ (verts model) V.!  ( fromIntegral $ Vec.getElem 0 $ fst ( (faces model V.! iface) !! nvert))
+model_vert model iface nvert  = fst $ (getVerts model) V.!  ( fromIntegral $ Vec.getElem 0 $ fst ( (getFaces model V.! iface) !! nvert))
 
 model_uv :: Model -> Int -> Int -> Vec.Vec2 Double
-model_uv model iface nvert = let (_, y, _)  = fromVec3 $ fst $ ((faces model) V.! iface) !! nvert
-                                 uv         = fst $ (uvs model) V.! ( fromInteger y)
+model_uv model iface nvert = let (_, y, _)  = fromVec3 $ fst $ ((getFaces model) V.! iface) !! nvert
+                                 uv         = fst $ (getUVs model) V.! ( fromInteger y)
                              in  uv --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
 model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
-                                (u',v') =  (floor (u * (fromIntegral (imgwidth $ diffuse_map model)))  ,  floor (v * (fromIntegral (imgheight $ diffuse_map model)) ))
-                                dm = diffuse_map model
+                                (u',v') =  (floor (u * (fromIntegral (imgwidth $ getDiffuseMap model)))  ,  floor (v * (fromIntegral (imgheight $ getDiffuseMap model)) ))
+                                dm = getDiffuseMap model
                                 image = img dm
                                 PixelRGB8 r g b = pixelAt image u' v'
                          in toVec4 r g b 255
 
 model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
 model_normal model uv = let (u, v)              =   fromVec2 uv
-                            (u', v')            =  (floor (u * (fromIntegral (normwidth $ normal_map model)))  ,  floor (v * (fromIntegral (normheight $ normal_map model)) ))
-                            image               = normimg (normal_map model)
+                            (u', v')            =  (floor (u * (fromIntegral (normwidth $ getNormalMap model)))  ,  floor (v * (fromIntegral (normheight $ getNormalMap model)) ))
+                            image               = normimg (getNormalMap model)
                             PixelRGBA8 r g b a  = pixelAt image u' v'
                             color = mapVec4 (fromIntegral) (toVec4 r g b a)
                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 - 1.0) (((getElemV4 1 color)/255.0) * 2.0 - 1.0) (((getElemV4 0 color)/255.0) * 2.0 - 1.0)

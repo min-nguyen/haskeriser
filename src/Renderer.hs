@@ -67,7 +67,7 @@ draw_loop rasteriser shader prev_mvp = do
 
 process_triangles :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
 process_triangles rasteriser shader iface = go 
-    where go =  if (iface > (nfaces (getModel rasteriser) - 1)) 
+    where go =  if (iface > (getNumFaces (getModel rasteriser) - 1)) 
                 then (rasteriser, shader)
                 else let (rasteriser', shader') = (process_triangle rasteriser shader iface)
                      in (process_triangles rasteriser' shader' (iface + 1) )

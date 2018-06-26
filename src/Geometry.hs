@@ -37,7 +37,7 @@ barycentric (a, b, c) p = let v0 = b - a
                           in (toVec3D u v w)
 
 mvp_matrix :: Shader -> Shader
-mvp_matrix shader = shader { mvp = (multmm (projection shader) (multmm (viewport shader) (modelview shader))) }
+mvp_matrix shader = shader { getMVP = (multmm (getProjection shader) (multmm (getViewport shader) (getModelview shader))) }
 
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
@@ -98,13 +98,13 @@ setup_shader rasteriser shader previous_mvp = case shader of
 
 
 project_shader :: Double -> Shader -> Shader
-project_shader  coeff  shader = shader {projection = projection_matrix coeff}
+project_shader  coeff  shader = shader {getProjection = projection_matrix coeff}
 
 viewport_shader :: Double -> Double -> Double -> Double ->  Shader -> Shader
-viewport_shader  x y w h shader = shader {viewport = viewport_matrix x y w h}
+viewport_shader  x y w h shader = shader {getViewport = viewport_matrix x y w h}
 
 lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader -> Shader
-lookat_shader  eye center up shader = shader {modelview = lookat_matrix eye center up }
+lookat_shader  eye center up shader = shader {getModelview = lookat_matrix eye center up }
 
 center :: Vec3 Double
 center = toVec3D 0.0 0.0 0.0

@@ -34,26 +34,26 @@ import Util
 import GHC.Generics (Generic, Generic1)
 import Control.DeepSeq
 
-read_tga :: String -> IO TGA_Header
-read_tga filepath = do
+read_tga_color :: String -> IO ColorMap
+read_tga_color filepath = do
 	bytestr <- B.readFile filepath
 	
 	let contents = decodeTga bytestr
 	
 
 	return $ case contents of 
-					Left s  -> debug  "HELLO" TGA_Error
+					Left s  -> debug  "HELLO" ColorMapError
 					Right d -> (case d of
-						ImageRGB8  p' ->  (TGA_ColorMap (imageWidth $   p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent PixelRGB8))  (8) p')
+						ImageRGB8  p' ->  (ColorMap (imageWidth $   p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent PixelRGB8))  (8) p')
 						-- ImageY16 c' -> (do
 						-- 			putStrLn "ye"
 						-- 			return (TGA_NormalMap (imageWidth $   c')  (imageHeight $  c') ((imageData c') :: V.Vector (Word8))  (8) c'))
 						-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
-						_ -> ( ( TGA_Error)))
+						_ -> ( ( ColorMapError)))
 
 
 
-read_tga_normal :: String -> IO NORMAL_MAP
+read_tga_normal :: String -> IO NormalMap
 read_tga_normal filepath = do
 	bytestr <- B.readFile filepath
 	
@@ -61,10 +61,10 @@ read_tga_normal filepath = do
 	
 
 	return $ case contents of 
-					Left s  -> debug "HELLO" NormalError
+					Left s  -> debug "HELLO" NormalMapError
 					Right d -> (case d of
 						ImageRGBA8  p' ->  (NormalMap (imageWidth $ p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent PixelRGBA8))  (8) p')
-						_ -> ( NormalError))				
+						_ -> ( NormalMapError))				
 
 
 

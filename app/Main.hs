@@ -46,7 +46,7 @@ loop draw_func model light camera depth_shader camera_shader = do
                         SDL.clear (renderer screen)
 
                         (ras'  , depth_shader')  <- draw_func ras  depth_shader Nothing
-                        (ras'' , camera_shader') <- draw_func ras' camera_shader (Just (mvp  depth_shader')) 
+                        (ras'' , camera_shader') <- draw_func ras' camera_shader (Just (getMVP depth_shader')) 
 
                         SDL.present (renderer screen)
                         -- unless quit (loop')
