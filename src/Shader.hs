@@ -49,29 +49,32 @@ vertex_shade (DepthShader modelview viewport projection mvp_mat varying_tri) ras
         let model = getModel ras
             gl_vert = (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
             gl_Vertex = multmv mvp_mat gl_vert  :: Vec4 Double
-            w = (1.0/(getElem 2 gl_Vertex)) :: Double
+    
             new_col =  (homogeneousToCartesian gl_Vertex) 
             new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri) 
         in (gl_Vertex, (DepthShader modelview viewport projection mvp_mat new_varying_tri) )
 
-fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> Vec4 Word8 -> (Vec4 Word8, Shader)
-fragment_shade shader ras bary_coords rgba = case shader of
+fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> (Vec4 Word8, Shader)
+fragment_shade shader ras bary_coords  = case shader of
 
     (DepthShader { getCurrentTri = current_tri, ..}) -> 
-       (let (px, py, pz) = (fromVec3D $ multmv (current_tri) bary_coords) :: (Double, Double, Double)    
-            color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (fromIntegral $ floor (pz/rCONST_depth))
+       (let (px, py, pz) = (fromVec3D $ multmv current_tri bary_coords) :: (Double, Double, Double)    
+            color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (pz/rCONST_depth)
         in  (color , shader)  )
     
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
        (let shadowBuff = getDepthBuffer ras
 
-            sb_p = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
-            (sb_px, sb_py, sb_pz, sb_pw) = fromVec4 sb_p -- (mult_v4_num sb_p (1.0/(getElemV4 3 sb_p)))
+            sb_p                            = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
+            (sb_px, sb_py, sb_pz, sb_pw)    = fromVec4 sb_p
 
-            idx =  (floor sb_px) + (floor sb_py) * (screenWidth_i)
+            currentBufferValue              = fst(shadowBuff V.! (floor ( sb_px + sb_py * (fromIntegral screenWidth_i) )))
 
-            isVisible = if (fst(shadowBuff V.! idx) < sb_pz) then 1.0 else 0.2
-            shadow = (0.3 + 0.7 * isVisible) :: Double
+            -- isVisible = if ((currentBufferValue < sb_pz) && (currentBufferValue > 0.0)) then sb_pz/2000.0
+            --                           | (fst(shadowBuff V.! idx) < sb_pz) of  then 1.0 else 0.2
+            isVisible = if (currentBufferValue < sb_pz) then sb_pz else currentBufferValue
+
+            shadow = (4000.0/((isVisible/125.0)*(isVisible/125.0))) :: Double
 
             uv = (multmv ((Vec.transpose :: Mat32 Double -> Mat23 Double) (vary_uv :: Mat32 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
             n  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
@@ -83,7 +86,7 @@ fragment_shade shader ras bary_coords rgba = case shader of
 
             rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-            color = add_rgba_d (mult_rgba_d rgba  (( shadow * (1.4 * diff + 0.3)  ) :: Double) ) 20.0
+            color = add_rgba_d (mult_rgba_d rgba  ( ( shadow * ( 1.4 * diff + 0.6)  ) :: Double) ) 20.0
 
         in  (color , shader) )             
 

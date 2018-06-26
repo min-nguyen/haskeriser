@@ -47,7 +47,7 @@ loop draw_func model light camera depth_shader camera_shader = do
 
                         (ras'  , depth_shader')  <- draw_func ras  depth_shader (Vec.identity :: Mat44 Double)
                         (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP depth_shader')) 
-                        
+                        render_screen ras'' camera_shader'
                         SDL.present (renderer screen)
                         -- unless quit (loop')
         loop'

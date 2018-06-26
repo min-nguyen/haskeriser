@@ -237,7 +237,8 @@ cartesianToHomogeneous v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
 homogeneousToCartesian ::  Vec4 Double -> Vec3 Double
 homogeneousToCartesian v4 = let (x,y,z,w) = fromVec4 v4 in toVec3 (x/w) (y/w) (z/w)
 
-
+-- homogeneousToCartesian ::  Vec4 Double -> Vec3 Double
+-- homogeneousToCartesian v4 = let (x,y,z,w) = fromVec4 v4 in toVec3 (x/w) (y/w) (z/w)
 
 or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
 or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
@@ -256,7 +257,7 @@ mult_rgba_d rgba intensity =  let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fr
                                                             | otherwise -> intensity
                             
                                     (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (scale *)) (r, g, b, a)
-                                in  toVec4 r' g' b' a'  
+                                in  toVec4 r' g' b' a'
 add_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
 add_rgba_d rgba scalar =      let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
                                     addword8 = (\channel -> case () of _ 
@@ -264,7 +265,7 @@ add_rgba_d rgba scalar =      let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fr
                                                                          | ((channel + scalar) < 0.0  ) -> 0
                                                                          | otherwise -> (fromInteger $ floor (channel + scalar)) ) :: Double -> Word8
                                     (r', g', b', a') = (mapTuple4 addword8 (r, g, b, a))
-                              in    toVec4 r' g' b' (fromInteger (floor a))
+                              in    toVec4 r' g' b' a' -- (fromInteger (floor a))
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---
       --- ‾------------------------------------------------------------------‾---

@@ -160,13 +160,15 @@ type ZBuffer = V.Vector (Double, Vec4 Word8)
 type ScreenCoords = Vec3 (Vec3 Int) 
 
 rCONST_depth  :: Double
-rCONST_depth = 2000.0
+rCONST_depth = 20.0
 
 screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (150, 150)
+(screenWidth, screenHeight) = (200, 200)
+
+-- debug (bary_coords, sb_pz, currentBufferValue ) 
 
 screenWidth_i, screenHeight_i :: Int
-(screenWidth_i, screenHeight_i) = (150, 150)
+(screenWidth_i, screenHeight_i) = (200, 200)
 
 
 

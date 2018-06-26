@@ -21,20 +21,23 @@ import Camera
 import Types
 import Util
 
-barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Vec3 Double
-barycentric (a, b, c) p = let v0 = b - a
-                              v1 = c - a
-                              v2 = p - a
-                              d00 = Vec.dot v0 v0
-                              d01 = Vec.dot v0 v1
-                              d11 = Vec.dot v1 v1
-                              d20 = Vec.dot v2 v0
-                              d21 = Vec.dot v2 v1
-                              denom = d00 * d11 - d01 * d01
-                              v = (d11 * d20 - d01 * d21)/denom
-                              w = (d00 * d21 - d01 * d20)/denom
-                              u = 1.0 - v - w
-                          in (toVec3D u v w)
+barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Maybe (Vec3 Double)
+barycentric (a, b, c) p =   let v0 = b - a
+                                v1 = c - a
+                                v2 = p - a
+                                d00 = Vec.dot v0 v0
+                                d01 = Vec.dot v0 v1
+                                d11 = Vec.dot v1 v1
+                                d20 = Vec.dot v2 v0
+                                d21 = Vec.dot v2 v1
+                                denom = d00 * d11 - d01 * d01
+                                v = (d11 * d20 - d01 * d21)/denom
+                                u = (d00 * d21 - d01 * d20)/denom
+                                w = 1.0 - v - u
+
+                            in (if ((0 <= u && u <= 1) && (0 <= v && v <= 1) && (u + v <= 1))
+                                then (Just (toVec3D u v w))
+                                else Nothing)
 
 mvp_matrix :: Shader -> Shader
 mvp_matrix shader = shader { getMVP = (multmm (getViewport shader) (multmm (getProjection shader) (getModelView shader))) }
@@ -43,12 +46,11 @@ projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
                    
 
-
 viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
-viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0],
-                                        [0,       h/2.0,     0,          y+h/2.0],
-                                        [0,       0,         rCONST_depth/2.0,    rCONST_depth/2.0],
-                                        [0,       0,         0,          1.0]]
+viewport_matrix x y w h =             matFromLists [[w/2.0,   0,         0,          x+w/2.0],
+                                                    [0,       h/2.0,     0,          y+h/2.0],
+                                                    [0,       0,         rCONST_depth/2.0,    rCONST_depth/2.0],
+                                                    [0,       0,         0,          1.0]]
 
 
 --                 EYE          CENTER        UP                                     
@@ -101,14 +103,14 @@ setup_shader rasteriser shader previous_mvp = case shader of
             ----------- SET UP MVP MATRICES IN SHADER -----------
             shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
 
-            uniform_M = multmm (getProjection shade') (getModelView shade') 
+            uniform_M = (getModelView shade')
             
-            inv_MV = invert (multmm (getProjection shade') (getModelView shade'))
-            uniform_MIT = case inv_MV of Just invProjMod -> transpose invProjMod
+            inv_MV = invert (multmm (getProjection shade') uniform_M)
+            uniform_MIT = case inv_MV of Just invProjMod -> (transpose invProjMod :: Mat44 Double)
                                          Nothing         -> (Vec.identity :: Mat44 Double)
 
             inv_MVP = invert (getMVP shade')
-            uniform_MShadow = case inv_MVP of Just invMVP     -> multmm previous_mvp invMVP
+            uniform_MShadow = case inv_MVP of Just invMVP     -> ((multmm previous_mvp invMVP) :: Mat44 Double)
                                               Nothing         -> (Vec.identity :: Mat44 Double)
 
         return shade' {getUniformM = uniform_M, getUniformMIT = uniform_MIT, getUniformMShadow = uniform_MShadow})

@@ -32,10 +32,10 @@ import qualified Data.Vec as Vec  (map)
 import Types
 
 load_zbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
-load_zbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
+load_zbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 0 0 0 0))) 
 
 load_shadowbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
-load_shadowbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (-100000.0, toVec4 255 255 255 255))) 
+load_shadowbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 255 255 255 255))) 
 
 load_rasteriser :: Model -> Screen -> Camera -> Light -> Rasteriser
 load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer model screen camera light 
@@ -51,26 +51,28 @@ draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_m
         ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4D (vertex_0, vertex_1, vertex_2)
        
         -- Coordinate Attributes
-        c = barycentric ( projectVec4to2 (mult_v4_num vertex_0 (1.0/w0) ) , projectVec4to2 (mult_v4_num vertex_1  (1.0/w1) ), projectVec4to2 (mult_v4_num vertex_2 (1.0/w2)) )  ( toVec2D (to_double px) (to_double py) )
-        z = (z0 * getElem 0 c) + (z1 * getElem 1 c) + (z2 * getElem 2 c) 
-        w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
-        frag_depth = (z/w) :: Double
-        
-      
-        (updateBuffer, getBuffer) = case shader of (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
-                                                   (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
-    in
-          -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
-        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 ||  (fst (((getBuffer rasteriser)) V.! (px + py * screenWidth_i))) > frag_depth ) 
-            then  (recurseVertex rasteriser shader) 
-            else let (rgba , updated_shader) = fragment_shade shader (rasteriser) c (toVec4 0 0 0 0)
-                     updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
-                 in  recurseVertex (updateBuffer (updated_buffer, rasteriser) ) updated_shader
-        where
-            recurseVertex new_rasteriser new_shader 
-              | py >= bbox_max_y                        =  (new_rasteriser, new_shader)
-              | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1)) 
-              | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)             
+        maybeBary = barycentric ( projectVec4to2 (mult_v4_num vertex_0 (1.0/w0) ) , projectVec4to2 (mult_v4_num vertex_1  (1.0/w1) ), projectVec4to2 (mult_v4_num vertex_2 (1.0/w2)) )  ( toVec2D (to_double px) (to_double py) )
+
+        recurseVertex new_rasteriser new_shader 
+            | py >= bbox_max_y                        =  (new_rasteriser, new_shader)
+            | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1))
+            | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)       
+
+    in  case maybeBary of Nothing -> (recurseVertex rasteriser shader)
+                          Just bary -> (    let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 
+                                                w = (w0 * getElem 0 bary) + (w1 * getElem 1 bary) + (w2 * getElem 2 bary) 
+                                                frag_depth = (z/w) :: Double
+                                                
+                                                (updateBuffer, getBuffer) = case shader of  (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
+                                                                                            (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
+
+                                            in  (if ( (fst ((getBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth )
+                                                    then (recurseVertex rasteriser shader) 
+                                                    else let (rgba , updated_shader) = fragment_shade shader (rasteriser) bary
+                                                             updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
+                                                         in  (recurseVertex (updateBuffer (updated_buffer, rasteriser) ) updated_shader)))
+                                                
+                                                          
 
 
 

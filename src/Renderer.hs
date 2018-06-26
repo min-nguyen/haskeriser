@@ -23,7 +23,7 @@ import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
 import Debug.Trace as Trace
-import Data.List
+import Data.List as List
 import Data.Cross
 import Foreign.C.Types
 import SDL.Vect
@@ -55,7 +55,7 @@ draw_loop rasteriser shader prev_mvp = do
 
     let (ras', shade') = process_triangles rasteriser  shader' 0
     
-    render_screen ras' shade'
+
 
     return (ras', shade')
 
@@ -63,7 +63,7 @@ draw_loop rasteriser shader prev_mvp = do
 
 process_triangles :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
 process_triangles rasteriser shader iface = go 
-    where go =  if  debug iface (iface > (getNumFaces (getModel rasteriser) - 1)) 
+    where go =  if (iface > (getNumFaces (getModel rasteriser) - 1)) 
                 then (rasteriser, shader)
                 else let (rasteriser', shader') = (process_triangle rasteriser shader iface)
                      in (process_triangles rasteriser' shader' (iface + 1) )
@@ -71,9 +71,9 @@ process_triangles rasteriser shader iface = go
 process_triangle :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
 process_triangle rasteriser shader iface  = 
                         let ----------- VERTEX SHADER -----------
-                            (zeroth_vertex, zeroth_shader) = vertex_shade shader ( rasteriser)  iface 0 
+                            -- (zeroth_vertex, zeroth_shader) = vertex_shade shader ( rasteriser)  iface 0 
                             (vertexes, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader ( rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
-                                                                                                       in  (vs:vert_coords, folded_shader'))) (zeroth_vertex:[], zeroth_shader) [1, 2]) :: ( [Vec4 Double], Shader)
+                                                                                                       in  ((vs:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
                                                                          
 
                             (vertex_x:vertex_y:vertex_z:_) = vertexes
@@ -118,7 +118,7 @@ render_screen ras shader =
                                     rgba =  case shader of  (CameraShader {..}) -> vec4ToV4 $ snd $ (getZBuffer ras) V.! index
                                                             (DepthShader  {..}) -> vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index
 
-                                debug ((px,py)) (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length (getZBuffer ras) - 1)]        
+                                (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length (getZBuffer ras) - 1)]        
 
 
 

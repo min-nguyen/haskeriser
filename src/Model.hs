@@ -89,12 +89,12 @@ model_face :: Model -> Int -> [Integer]
 model_face model ind = [x | face_Vec3 <- ((getFaces model) V.! ind), let  (x, y, z) = fromVec3 (fst face_Vec3)]
 
 model_vert :: Model -> Int -> Int -> Vec.Vec3 Double
-model_vert model iface nvert  = fst $ (getVerts model) V.!  ( fromIntegral $ Vec.getElem 0 $ fst ( (getFaces model V.! iface) !! nvert))
+model_vert model iface nvert  = debug (iface, nvert)  (fst ((getVerts model) V.! (fromIntegral ( (Vec.getElem 0 (fst (( (getFaces model) V.! iface) !! nvert))) )  )  ))
 
 model_uv :: Model -> Int -> Int -> Vec.Vec2 Double
-model_uv model iface nvert = let (_, y, _)  = fromVec3 $ fst $ ((getFaces model) V.! iface) !! nvert
-                                 uv         = fst $ (getUVs model) V.! ( fromInteger y)
-                             in  uv --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
+model_uv model iface nvert =                        (let y          = fromIntegral ( (Vec.getElem 1 (fst (( (getFaces model) V.! iface) !! nvert))) )  
+                                                         uv         = fst ((getUVs model) V.! y)
+                                                     in  uv) --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
 model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
