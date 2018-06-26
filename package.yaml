@@ -94,5 +94,6 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -XRecordWildCards
     dependencies:
     - keta

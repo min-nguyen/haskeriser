@@ -37,7 +37,7 @@ barycentric (a, b, c) p = let v0 = b - a
                           in (toVec3D u v w)
 
 mvp_matrix :: Shader -> Shader
-mvp_matrix shader = shader { getMVP = (multmm (getProjection shader) (multmm (getViewport shader) (getModelview shader))) }
+mvp_matrix shader = shader { getMVP = (multmm (getViewport shader) (multmm (getProjection shader) (getModelView shader))) }
 
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
@@ -53,24 +53,17 @@ viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0
 
 --                 EYE          CENTER        UP                                     
 lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double
-lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye - center
-                                    (x2, y2, z2) = fromVec3D $  normalize $ cross up (toVec3 x1 y1 z1)
-                                    (x3, y3, z3) = fromVec3D $  normalize $ cross (toVec3 x1 y1 z1) (toVec3 x2 y2 z2)
-                                    (cx, cy, cz) = fromVec3D $ center
-                              in matFromLists [ [x1, x3,  x2,   0],
-                                                [y1, y3,  y2,   0],
-                                                [z1, z3,  z2,   0],
-                                                [(-cx), (-cy), (-cz), 1]]
+lookat_matrix = rotationLookAt
 
 mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
-mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ((project_shader coeff) .
-                                                                          (viewport_shader x y w h ) . 
+mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ((viewport_shader x y w h ) . 
+                                                                          (project_shader coeff) .
                                                                           (lookat_shader eye' center' up')) shader
                                                             mvpshader' = mvp_matrix mvpshader
                                                         in  mvpshader'
 
 
-setup_shader :: Rasteriser -> Shader -> Maybe (Mat44 Double) -> IO Shader
+setup_shader :: Rasteriser -> Shader -> Mat44 Double -> IO Shader
 setup_shader rasteriser shader previous_mvp = case shader of
     DepthShader _ _ _ _ _ -> (do
         let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
@@ -93,8 +86,19 @@ setup_shader rasteriser shader previous_mvp = case shader of
             depth_coeff     = ((-1.0)/(Vec.norm(eye-center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
+            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
 
-        return $ mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
+            uniform_M = getModelView shade'
+            
+            inv_MV = invert (multmm (getProjection shade') (getModelView shade'))
+            uniform_MIT = case inv_MV of Just invProjMod -> transpose invProjMod
+                                         Nothing         -> (Vec.identity :: Mat44 Double)
+
+            inv_MVP = invert (getMVP shade')
+            uniform_MShadow = case inv_MVP of Just invMVP     -> multmm previous_mvp invMVP
+                                              Nothing         -> (Vec.identity :: Mat44 Double)
+
+        return shade' {getUniformM = uniform_M, getUniformMIT = uniform_MIT, getUniformMShadow = uniform_MShadow})
 
 
 project_shader :: Double -> Shader -> Shader
@@ -104,7 +108,7 @@ viewport_shader :: Double -> Double -> Double -> Double ->  Shader -> Shader
 viewport_shader  x y w h shader = shader {getViewport = viewport_matrix x y w h}
 
 lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader -> Shader
-lookat_shader  eye center up shader = shader {getModelview = lookat_matrix eye center up }
+lookat_shader  eyev centerv upv shader = shader {getModelView = lookat_matrix eyev centerv upv }
 
 center :: Vec3 Double
 center = toVec3D 0.0 0.0 0.0

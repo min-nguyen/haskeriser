@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
         -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
         -- |                                                                        | -- 
@@ -45,21 +46,16 @@ import Types
 
 
 
-draw_loop :: Rasteriser -> Shader -> Maybe (Mat44 Double) -> IO (Rasteriser, Shader)
+draw_loop :: Rasteriser -> Shader -> Mat44 Double -> IO (Rasteriser, Shader)
 draw_loop rasteriser shader prev_mvp = do
     let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
-
-        screen_width    = to_double $ width_i screen
-        screen_height   = to_double $ height_i screen
-        light_dir       = Vec.normalize $ direction light
-        depth_coeff     = 0.0
 
          ----------- SET UP MVP MATRICES IN SHADER -----------
     shader' <- setup_shader rasteriser shader prev_mvp
 
     let (ras', shade') = process_triangles rasteriser  shader' 0
     
-    -- render_screen ras'
+    render_screen ras' shade'
 
     return (ras', shade')
 
@@ -67,7 +63,7 @@ draw_loop rasteriser shader prev_mvp = do
 
 process_triangles :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
 process_triangles rasteriser shader iface = go 
-    where go =  if (iface > (getNumFaces (getModel rasteriser) - 1)) 
+    where go =  if  debug iface (iface > (getNumFaces (getModel rasteriser) - 1)) 
                 then (rasteriser, shader)
                 else let (rasteriser', shader') = (process_triangle rasteriser shader iface)
                      in (process_triangles rasteriser' shader' (iface + 1) )
@@ -112,15 +108,16 @@ process_triangle rasteriser shader iface  =
 
                         in  (updated_rasteriser, updated_shader)
 
-render_screen :: Rasteriser -> IO [()]
-render_screen ras =
+render_screen :: Rasteriser -> Shader -> IO [()]
+render_screen ras shader =
                 mapM (\index -> do 
                                 let screen = getScreen ras
-                                    zbuffer = getZBuffer ras
                                     px = index `mod` (width_i screen)
-                                    py = floor $ (to_double (index - px)) / (to_double (width_i screen)) 
-                                    rgba = vec4ToV4 $ snd $ zbuffer V.! index
-                                
+                                    py = floor $ (to_double (index - px)) / (to_double (width_i screen))
+
+                                    rgba =  case shader of  (CameraShader {..}) -> vec4ToV4 $ snd $ (getZBuffer ras) V.! index
+                                                            (DepthShader  {..}) -> vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index
+
                                 debug ((px,py)) (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length (getZBuffer ras) - 1)]        
 
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE RecordWildCards #-}
 
         -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
         -- |                                                                        | -- 
@@ -45,7 +45,7 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer mode
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
 draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  (Rasteriser, Shader)
 draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py = 
-    let 
+    let
         -- Screen Coordinates
         (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
         ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4D (vertex_0, vertex_1, vertex_2)
@@ -56,13 +56,16 @@ draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_m
         w = (w0 * getElem 0 c) + (w1 * getElem 1 c) + (w2 * getElem 2 c) 
         frag_depth = (z/w) :: Double
         
-    in 
+      
+        (updateBuffer, getBuffer) = case shader of (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
+                                                   (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
+    in
           -- Verify bounds and handle recursion through px and py of lists [0 .. 3] and [0 .. 3]
-        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 ||  (fst ((getZBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth ) 
-            then  (recurseVertex rasteriser shader)
+        if (getElem 0 c < 0.0 || getElem 1 c < 0.0 || getElem 2 c < 0.0 ||  (fst (((getBuffer rasteriser)) V.! (px + py * screenWidth_i))) > frag_depth ) 
+            then  (recurseVertex rasteriser shader) 
             else let (rgba , updated_shader) = fragment_shade shader (rasteriser) c (toVec4 0 0 0 0)
-                     updated_zbuffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getZBuffer rasteriser)
-                 in  recurseVertex (rasteriser {getZBuffer = updated_zbuffer}) updated_shader
+                     updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
+                 in  recurseVertex (updateBuffer (updated_buffer, rasteriser) ) updated_shader
         where
             recurseVertex new_rasteriser new_shader 
               | py >= bbox_max_y                        =  (new_rasteriser, new_shader)

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RecordWildCards #-}
 
         -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
         -- |                                                                        | -- 
@@ -33,7 +34,8 @@ import Codec.Picture
 import Codec.Picture.Types
 import Util
 
-data Rasteriser = Rasteriser {  
+data Rasteriser = Rasteriser 
+                            {  
                                 getZBuffer     :: V.Vector (Double, Vec4 Word8),
                                 getDepthBuffer :: V.Vector (Double, Vec4 Word8),
                                 getModel       :: Model,
@@ -42,40 +44,46 @@ data Rasteriser = Rasteriser {
                                 getLight       :: Light
                             }
 
-data Shader =   DepthShader {
-                                getModelview   :: Mat44 Double,
+data Shader =   DepthShader 
+                            {
+                                getModelView   :: Mat44 Double,
                                 getViewport    :: Mat44 Double,
                                 getProjection  :: Mat44 Double,
                                 getMVP         :: Mat44 Double,
                                 getCurrentTri  :: Mat33 Double
                             }
+
                 | CameraShader 
                             {
-                                getModelview      :: Mat44 Double,
+                                getModelView      :: Mat44 Double,
                                 getViewport       :: Mat44 Double,
                                 getProjection     :: Mat44 Double,
                                 getMVP            :: Mat44 Double,
                                 getUniformM       :: Mat44 Double,
                                 getUniformMIT     :: Mat44 Double,
-                                getUniformMshadow :: Mat44 Double,
+                                getUniformMShadow :: Mat44 Double,
                                 getCurrentUV      :: Mat32 Double,
                                 getCurrentTri     :: Mat33 Double
                             }
 
-data Model = Model {    
-                        getVerts       :: V.Vector (Vec3 Double, Int),
-                        getFaces       :: V.Vector ([(Vec3 Integer, Int)]),
-                        getNorms       :: V.Vector (Vec3 Double, Int),
-                        getUVs         :: V.Vector (Vec2 Double, Int),
-                        getNumFaces :: Int,
-                        getNumVerts :: Int,
-                        getDiffuseMap :: ColorMap,
-                        getNormalMap :: NormalMap
+data Model  =   Model       {    
+                                getVerts       :: V.Vector (Vec3 Double, Int),
+                                getFaces       :: V.Vector ([(Vec3 Integer, Int)]),
+                                getNorms       :: V.Vector (Vec3 Double, Int),
+                                getUVs         :: V.Vector (Vec2 Double, Int),
+                                getNumFaces :: Int,
+                                getNumVerts :: Int,
+                                getDiffuseMap :: ColorMap,
+                                getNormalMap :: NormalMap
+                            }
+
+data Light  = Light {
+                        direction   :: Vec3 Double
                     }
 
-data Light  = Light {   direction   :: Vec3 Double}
-
-data Camera = Camera {  position :: Vec4 Double }
+data Camera = Camera {  
+                        position :: Vec4 Double 
+                     }
 
 data Screen = Screen  { 
                         window    :: SDL.Window,
@@ -114,27 +122,6 @@ data Color = Red | Blue | Yellow | Green | White | Purple
 
 data Texture = Texture SDL.Texture (V2 CInt)
 
----- |‾| ---------------------------------------------------------------------------- |‾| ----
----- | |                                                                              | | ----
----- |_| ---------------------------------------------------------------------------- |_| ----
-
-
-type ZBuffer = V.Vector (Double, Vec4 Word8)
-
-type ScreenCoords = Vec3 (Vec3 Int) 
-
-rCONST_depth  :: Double
-rCONST_depth = 2000.0
-
-screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (400, 400)
-
-screenWidth_i, screenHeight_i :: Int
-(screenWidth_i, screenHeight_i) = (400, 400)
-
-
-
-
 newtype Kernel s a = Kernel  {  
                                 runKernel       ::   s -> (a, s)
                              }
@@ -160,3 +147,27 @@ instance Functor (Kernel s) where
 instance Applicative (Kernel s) where
     pure = return
     (<*>) = ap
+
+
+
+
+    ---- |‾| -------------------------------------------------------------- |‾| ----
+     --- | |                        Type Aliases                            | | ---
+      --- ‾------------------------------------------------------------------‾---
+
+type ZBuffer = V.Vector (Double, Vec4 Word8)
+
+type ScreenCoords = Vec3 (Vec3 Int) 
+
+rCONST_depth  :: Double
+rCONST_depth = 2000.0
+
+screenWidth, screenHeight :: CInt
+(screenWidth, screenHeight) = (150, 150)
+
+screenWidth_i, screenHeight_i :: Int
+(screenWidth_i, screenHeight_i) = (150, 150)
+
+
+
+    
