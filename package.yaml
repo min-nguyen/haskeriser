@@ -42,6 +42,7 @@ dependencies:
 - vector
 - monad-par
 - monad-control
+- deepseq
 
 library:
   source-dirs: src

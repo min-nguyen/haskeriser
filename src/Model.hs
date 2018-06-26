@@ -71,9 +71,17 @@ load_model = do
         norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
    
-    diffuse_map <- read_tga "resources/african_head_diffuse.tga"
-    print (length faces'')
-    return $ Model verts'' faces'' norms'' uvs'' diffuse_map (length faces'') (length verts'')
+    diffuse_map_file <- read_tga "resources/african_head_diffuse.tga"
+    normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
+
+    -- case normal_map_file of 
+    --     NormalMap _ _ _ _ _ -> print "normal"
+    --     NormalError         -> print "error"
+    --     _                   -> print "error?"
+
+
+    -- print (imgwidth normal_map_file)
+    return $ Model verts'' faces'' norms'' uvs'' (length faces'') (length verts'') diffuse_map_file normal_map_file
 
 
 
@@ -90,18 +98,20 @@ model_uv model iface nvert = let (_, y, _)  = fromVec3 $ fst $ ((faces model) V.
 
 model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
-                                (u',v') =  (floor (u * (fromIntegral (width $ diffuse_map model)))  ,  floor (v * (fromIntegral (height $ diffuse_map model)) ))
+                                (u',v') =  (floor (u * (fromIntegral (imgwidth $ diffuse_map model)))  ,  floor (v * (fromIntegral (imgheight $ diffuse_map model)) ))
                                 dm = diffuse_map model
                                 image = img dm
                                 PixelRGB8 r g b = pixelAt image u' v'
                          in toVec4 r g b 255
 
--- model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
--- model_normal model uv = let (u, v)      =   fromVec2 uv
---                             scaledV2    =   toVec2  ( u * (fromIntegral (width $ normal_map model)) )  ( v * (fromIntegral (height $ normal_map model)) )
---                             color = normal_map model uv
---                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 - 1.0) (((getElemV4 1 color)/255.0) * 2.0 - 1.0) (((getElemV4 0 color)/255.0) * 2.0 - 1.0)
---                         in  rgb
+model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
+model_normal model uv = let (u, v)              =   fromVec2 uv
+                            (u', v')            =  (floor (u * (fromIntegral (normwidth $ normal_map model)))  ,  floor (v * (fromIntegral (normheight $ normal_map model)) ))
+                            image               = normimg (normal_map model)
+                            PixelRGBA8 r g b a  = pixelAt image u' v'
+                            color = mapVec4 (fromIntegral) (toVec4 r g b a)
+                            rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 - 1.0) (((getElemV4 1 color)/255.0) * 2.0 - 1.0) (((getElemV4 0 color)/255.0) * 2.0 - 1.0)
+                        in  rgb
 
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False

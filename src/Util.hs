@@ -230,6 +230,20 @@ mult_v4_num :: (Num a) => Vec4 a -> a -> Vec4 a
 mult_v4_num m s = let vs = Vec.toList m
                   in Vec.fromList $ map (s*) vs
 
+-- mult_v2 :: (Num a) => Vec2 a -> a -> Vec2 a
+-- mult_v2 m s =     let vs = Vec.toList m
+--                   in Vec.fromList $ map (s*) vs
+
+-- mult_vm :: (Num a) => Vec3 a -> a -> Vec3 a
+-- mult_v3 m s =     let vs = Vec.toList m
+--                   in Vec.fromList $ map (s*) vs
+
+-- mult_v4 :: (Num a) => Vec4 a -> a -> Vec4 a
+-- mult_v4 m s =     let vs = Vec.toList m
+--                   in Vec.fromList $ map (s*) vs
+
+
+
 or_Vec3 :: Vec3 Double -> Vec3 Double -> Vec3 Double
 or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - ay * bx)
             where (ax, ay, az) = fromVec3D a

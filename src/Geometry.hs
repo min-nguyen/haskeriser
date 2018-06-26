@@ -36,6 +36,9 @@ barycentric (a, b, c) p = let v0 = b - a
                               u = 1.0 - v - w
                           in (toVec3D u v w)
 
+mvp_matrix :: Shader -> Shader
+mvp_matrix shader = shader { mvp = (multmm (projection shader) (multmm (viewport shader) (modelview shader))) }
+
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
                    
@@ -59,12 +62,39 @@ lookat_matrix eye center up = let   (x1, y1, z1) = fromVec3D $  normalize $ eye 
                                                 [z1, z3,  z2,   0],
                                                 [(-cx), (-cy), (-cz), 1]]
 
-mvp_matrix :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
-mvp_matrix shader coeff x y w h eye' center' up'  =    let mvp =    (project_shader coeff) .
-                                                                    (viewport_shader x y w h ) . 
-                                                                    (lookat_shader eye' center' up')
-                                                        in mvp shader 
+mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
+mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ((project_shader coeff) .
+                                                                          (viewport_shader x y w h ) . 
+                                                                          (lookat_shader eye' center' up')) shader
+                                                            mvpshader' = mvp_matrix mvpshader
+                                                        in  mvpshader'
 
+
+setup_shader :: Rasteriser -> Shader -> Maybe (Mat44 Double) -> IO Shader
+setup_shader rasteriser shader previous_mvp = case shader of
+    DepthShader _ _ _ _ _ -> (do
+        let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
+
+            screen_width    = to_double $ width_i screen
+            screen_height   = to_double $ height_i screen
+            light_dir       = Vec.normalize $ direction light
+            depth_coeff     = 0.0
+
+            ----------- SET UP MVP MATRICES IN SHADER -----------
+
+        return $ mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up)
+        
+    CameraShader _ _ _ _ _ _ _ _ _ -> (do
+        let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
+
+            screen_width    = to_double $ width_i screen
+            screen_height   = to_double $ height_i screen
+            light_dir       = Vec.normalize $ direction light
+            depth_coeff     = ((-1.0)/(Vec.norm(eye-center)))
+
+            ----------- SET UP MVP MATRICES IN SHADER -----------
+
+        return $ mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
 
 
 project_shader :: Double -> Shader -> Shader
@@ -79,8 +109,8 @@ lookat_shader  eye center up shader = shader {modelview = lookat_matrix eye cent
 center :: Vec3 Double
 center = toVec3D 0.0 0.0 0.0
 
-forward :: Vec3 Double
-forward = toVec3D 0.0 0.0 1.0
+eye :: Vec3 Double
+eye = toVec3D 1.0 1.0 4.0
 
 up :: Vec3 Double
 up = toVec3D 0.0 1.0 0.0

@@ -46,6 +46,7 @@ data Shader =   DepthShader {
                                 modelview   :: Mat44 Double,
                                 viewport    :: Mat44 Double,
                                 projection  :: Mat44 Double,
+                                mvp         :: Mat44 Double,
                                 varying_tri :: Mat33 Double
                             }
                 | CameraShader 
@@ -53,6 +54,7 @@ data Shader =   DepthShader {
                                 modelview       :: Mat44 Double,
                                 viewport        :: Mat44 Double,
                                 projection      :: Mat44 Double,
+                                mvp             :: Mat44 Double,
                                 uniform_M       :: Mat44 Double,
                                 uniform_MIT     :: Mat44 Double,
                                 uniform_Mshadow :: Mat44 Double,
@@ -65,9 +67,10 @@ data Model = Model {
                         faces       :: V.Vector ([(Vec3 Integer, Int)]),
                         norms       :: V.Vector (Vec3 Double, Int),
                         uvs         :: V.Vector (Vec2 Double, Int),
-                        diffuse_map :: TGA_Header,
                         nfaces :: Int,
-                        nverts :: Int
+                        nverts :: Int,
+                        diffuse_map :: TGA_Header,
+                        normal_map :: NORMAL_MAP
                     }
 -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| --                                    
 -- |      FINISH INTEGRATING NEW DEPTH SHADER DATA TYPE                     | -- 
@@ -92,14 +95,23 @@ data Triangle = Triangle {
                             color   :: Vec4 Word8 
                          }
 
-data TGA_Header = TGA_Header {  
-                                width   :: {-# UNPACK #-} !Int,
-								height  :: {-# UNPACK #-} !Int,
-								imgdata :: ST.Vector (PixelBaseComponent PixelRGB8),
-								bbp     :: Int,
-								img     :: Image PixelRGB8
-                             }
+data TGA_Header = TGA_ColorMap  {  
+                                    imgwidth   :: {-# UNPACK #-} !Int,
+                                    imgheight  :: {-# UNPACK #-} !Int,
+                                    imgdata    :: ST.Vector (PixelBaseComponent PixelRGB8),
+                                    imgbbp     :: Int,
+                                    img        :: Image PixelRGB8
+                                }
 				 | TGA_Error
+
+data NORMAL_MAP = NormalMap {
+                                normwidth   :: {-# UNPACK #-} !Int,
+                                normheight  :: {-# UNPACK #-} !Int,
+                                normdata    :: ST.Vector (PixelBaseComponent PixelRGBA8) ,
+                                normbbp     :: Int,
+                                normimg     :: Image PixelRGBA8
+                            }
+                 | NormalError
 
 data Color = Red | Blue | Yellow | Green | White | Purple
 

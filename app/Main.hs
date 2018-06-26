@@ -17,6 +17,7 @@ import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)
 import Data.Maybe
 import Data.Word8
+import Data.Vec ( Mat44 )
 import Data.Matrix
 import Foreign.C.Types
 import SDL.Vect
@@ -33,18 +34,20 @@ import Rasteriser
 import Shader
 import Types
 
-loop :: (Rasteriser -> Shader -> IO()) -> Model -> Light -> Camera -> Shader -> IO()
-loop draw_func model light camera shader = do
+loop :: (Rasteriser -> Shader -> Maybe (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> IO()
+loop draw_func model light camera depth_shader camera_shader = do
         screen <- sdl_init
-        let rasteriser = (load_rasteriser model screen camera light) :: Rasteriser
+        let ras = (load_rasteriser model screen camera light) :: Rasteriser
             loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
                         let quit = SDL.QuitEvent `elem` events
 
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
-                        draw_func rasteriser shader
-                      
+
+                        (ras'  , depth_shader')  <- draw_func ras  depth_shader Nothing
+                        (ras'' , camera_shader') <- draw_func ras' camera_shader (Just (mvp  depth_shader')) 
+
                         SDL.present (renderer screen)
                         -- unless quit (loop')
         loop'
@@ -64,5 +67,6 @@ main = do
     camera <- load_camera
     light <- load_light
     let depth_shader = load_depthshader
-    loop draw_loop model light camera depth_shader
+        camera_shader = load_camerashader
+    loop draw_loop model light camera depth_shader camera_shader
     return ()

@@ -45,8 +45,8 @@ import Types
 
 
 
-draw_loop :: Rasteriser -> Shader -> IO()
-draw_loop rasteriser shader = do
+draw_loop :: Rasteriser -> Shader -> Maybe (Mat44 Double) -> IO (Rasteriser, Shader)
+draw_loop rasteriser shader prev_mvp = do
     let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
 
         screen_width    = to_double $ width_i screen
@@ -55,13 +55,13 @@ draw_loop rasteriser shader = do
         depth_coeff     = 0.0
 
          ----------- SET UP MVP MATRICES IN SHADER -----------
-        setup_shader = mvp_matrix shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up
+    shader' <- setup_shader rasteriser shader prev_mvp
 
-    let (ras', shade') = process_triangles rasteriser setup_shader 0
+    let (ras', shade') = process_triangles rasteriser  shader' 0
     
-    render_screen ras'
-    print "done"
-    return ()
+    -- render_screen ras'
+
+    return (ras', shade')
 
 
 
