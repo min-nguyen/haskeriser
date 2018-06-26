@@ -83,7 +83,7 @@ fragment_shade shader ras bary_coords rgba = case shader of
 
             rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-            color = add_rgba_d (mult_rgba_d rgba  (( shadow * (1.4 * diff + 0.3)  ) :: Double) ) 20
+            color = add_rgba_d (mult_rgba_d rgba  (( shadow * (1.4 * diff + 0.3)  ) :: Double) ) 20.0
 
         in  (color , shader) )             
 
