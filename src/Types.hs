@@ -82,7 +82,7 @@ data Light  = Light {
                     }
 
 data Camera = Camera {  
-                        position :: Vec4 Double 
+                        position :: Vec3 Double 
                      }
 
 data Screen = Screen  { 

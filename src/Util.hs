@@ -210,10 +210,10 @@ projectVec4to2 :: (Num a) => Vec4 a -> Vec2 a
 projectVec4to2 v4 = let (x,y,z,w) = fromVec4 v4 in toVec2 x y 
 
 projectVec4to3D :: Vec4 Double -> Vec3 Double
-projectVec4to3D v4 = let (x,y,z,w) = fromVec4D v4 in toVec3D x y z
+projectVec4to3D v4 = homogeneousToCartesian v4
 
 embedVec3to4D ::  Vec3 Double -> Vec4 Double
-embedVec3to4D v3 = let (x,y,z) = fromVec3D v3 in toVec4D x y z 1.0
+embedVec3to4D v3 = cartesianToHomogeneous v3
 
 embedVec3to4 :: (Num a) =>  Vec3 a -> Vec4 a
 embedVec3to4 v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
@@ -230,17 +230,12 @@ mult_v4_num :: (Num a) => Vec4 a -> a -> Vec4 a
 mult_v4_num m s = let vs = Vec.toList m
                   in Vec.fromList $ map (s*) vs
 
--- mult_v2 :: (Num a) => Vec2 a -> a -> Vec2 a
--- mult_v2 m s =     let vs = Vec.toList m
---                   in Vec.fromList $ map (s*) vs
+cartesianToHomogeneous ::  Vec3 Double -> Vec4 Double
+cartesianToHomogeneous v3 = let (x,y,z) = fromVec3 v3 in toVec4 x y z 1
 
--- mult_vm :: (Num a) => Vec3 a -> a -> Vec3 a
--- mult_v3 m s =     let vs = Vec.toList m
---                   in Vec.fromList $ map (s*) vs
 
--- mult_v4 :: (Num a) => Vec4 a -> a -> Vec4 a
--- mult_v4 m s =     let vs = Vec.toList m
---                   in Vec.fromList $ map (s*) vs
+homogeneousToCartesian ::  Vec4 Double -> Vec3 Double
+homogeneousToCartesian v4 = let (x,y,z,w) = fromVec4 v4 in toVec3 (x/w) (y/w) (z/w)
 
 
 
@@ -254,10 +249,22 @@ or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - a
       --- ‾------------------------------------------------------------------‾---
   
 mult_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
-mult_rgba_d rgba intensity =  let  (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
-                              in if intensity > 1.0 then rgba else if intensity < 0.0 then toVec4 0 0 0 0 else (  let  (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (intensity *)) (r, g, b, a)
-                                                                                                                  in toVec4 r' g' b' a'  )
-
+mult_rgba_d rgba intensity =  let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
+                                    scale =  case () of _ 
+                                                            | intensity > 1.0 -> 1.0
+                                                            | intensity < 0.0 -> 0.0
+                                                            | otherwise -> intensity
+                            
+                                    (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (scale *)) (r, g, b, a)
+                                in  toVec4 r' g' b' a'  
+add_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
+add_rgba_d rgba scalar =      let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
+                                    addword8 = (\channel -> case () of _ 
+                                                                         | ((channel + scalar) > 255.0) -> 255
+                                                                         | ((channel + scalar) < 0.0  ) -> 0
+                                                                         | otherwise -> (fromInteger $ floor (channel + scalar)) ) :: Double -> Word8
+                                    (r', g', b', a') = (mapTuple4 addword8 (r, g, b, a))
+                              in    toVec4 r' g' b' (fromInteger (floor a))
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---
       --- ‾------------------------------------------------------------------‾---

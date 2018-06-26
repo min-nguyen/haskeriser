@@ -35,10 +35,10 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
         ras iface nthvert = 
             let model = getModel ras
                 vert_uv     = ((model_uv model iface nthvert ) :: Vec2 Double)
-                vert_coords = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
+                vert_coords = (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
 
-                gl_Vertex = ((multmv (vport)) . (multmv (proj)) . (multmv (mview))) vert_coords  :: Vec4 Double
-                gl_Vertex' = projectVec4to3D (mult_v4_num (gl_Vertex) (1.0/(getElem 3 gl_Vertex))) :: Vec3 Double
+                gl_Vertex =  multmv mvp_mat vert_coords  :: Vec4 Double
+                gl_Vertex' = (homogeneousToCartesian gl_Vertex ) :: Vec3 Double
 
                 new_varying_uv  = (setElemV3 nthvert vary_uv vert_uv)
                 new_varying_tri = Vec.transpose $ Vec.setElem nthvert gl_Vertex' (Vec.transpose $ vary_tri)
@@ -47,10 +47,10 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
 
 vertex_shade (DepthShader modelview viewport projection mvp_mat varying_tri) ras iface nthvert = 
         let model = getModel ras
-            gl_vert = (embedVec3to4D $ model_vert model iface nthvert ) :: Vec4 Double
-            gl_Vertex = ((multmv (viewport)) . (multmv (projection)) . (multmv (modelview))) gl_vert  :: Vec4 Double
+            gl_vert = (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
+            gl_Vertex = multmv mvp_mat gl_vert  :: Vec4 Double
             w = (1.0/(getElem 2 gl_Vertex)) :: Double
-            new_col =  mult_v3_num (projectVec4to3D gl_Vertex) w
+            new_col =  (homogeneousToCartesian gl_Vertex) 
             new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri) 
         in (gl_Vertex, (DepthShader modelview viewport projection mvp_mat new_varying_tri) )
 
@@ -65,26 +65,25 @@ fragment_shade shader ras bary_coords rgba = case shader of
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
        (let shadowBuff = getDepthBuffer ras
 
-            sb_p = (multmv uni_Mshadow (embedVec3to4 (multmv vary_tri bary_coords))) :: Vec4 Double   
-            (sb_px, sb_py, sb_pz, sb_pw) = fromVec4 (mult_v4_num sb_p (1.0/(getElemV4 3 sb_p)))
+            sb_p = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
+            (sb_px, sb_py, sb_pz, sb_pw) = fromVec4 sb_p -- (mult_v4_num sb_p (1.0/(getElemV4 3 sb_p)))
 
             idx =  (floor sb_px) + (floor sb_py) * (screenWidth_i)
 
-            isVisible = if (fst(shadowBuff V.! idx) < sb_pz) then 1.0 else 0.0
+            isVisible = if (fst(shadowBuff V.! idx) < sb_pz) then 1.0 else 0.2
             shadow = (0.3 + 0.7 * isVisible) :: Double
 
             uv = (multmv ((Vec.transpose :: Mat32 Double -> Mat23 Double) (vary_uv :: Mat32 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
-            n  = (Vec.normalize $ projectVec4to3 $ multmv uni_MIT (embedVec3to4 (model_normal (getModel ras) uv)))  :: Vec3 Double ----
-            l  = (Vec.normalize $ projectVec4to3 $ multmv uni_M (embedVec3to4 (Vec.normalize $ direction (getLight ras))))  :: Vec3 Double
+            n  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
+            l  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (Vec.normalize $ direction (getLight ras))))  :: Vec3 Double
             -- r  = (Vec.normalize $ (mult_v3_num n (mult_v3_num (multvv n l) 2.0)) - l ) :: Vec3 Double 
 
 
             diff = (max 0.0 ((dot n l) :: Double) ) :: Double
 
-            (r,g,b,a) =  fromVec4 (model_diffuse (getModel ras) uv)
-            (r',g',b',_) = mapTuple4 (20 +) (r,g,b,a)
+            rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-            color = mult_rgba_d ((toVec4 r' g' b' a) :: Vec4 Word8) (fromIntegral $ floor ( shadow * (1.2 * diff + 0.1)  ))
+            color = add_rgba_d (mult_rgba_d rgba  (( shadow * (1.4 * diff + 0.3)  ) :: Double) ) 20
 
         in  (color , shader) )             
 

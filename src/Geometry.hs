@@ -48,12 +48,23 @@ viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
 viewport_matrix x y w h = matFromLists [[w/2.0,   0,         0,          x+w/2.0],
                                         [0,       h/2.0,     0,          y+h/2.0],
                                         [0,       0,         rCONST_depth/2.0,    rCONST_depth/2.0],
-                                        [0,       0,         0,          1]]
+                                        [0,       0,         0,          1.0]]
 
 
 --                 EYE          CENTER        UP                                     
 lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double
 lookat_matrix = rotationLookAt
+
+mk_transformation_matrix :: Num a => Mat33 a -> Vec3 a -> Mat44 a
+mk_transformation_matrix r t = 
+        (toVec4 (snoc3 r1 tx) (snoc3 r2 ty) (snoc3 r3 tz) (toVec4 0 0 0 1))
+    where snoc3 v3 = (\w -> let (x, y, z) = fromVec3 v3 in toVec4 x y z w)
+          (tx, ty, tz) = fromVec3 t
+          (r1, r2, r3) = fromVec3 r
+
+
+
+
 
 mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
 mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ((viewport_shader x y w h ) . 
@@ -83,12 +94,14 @@ setup_shader rasteriser shader previous_mvp = case shader of
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
             light_dir       = Vec.normalize $ direction light
+        
+            cam_pos         = position camera
             depth_coeff     = ((-1.0)/(Vec.norm(eye-center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
             shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
 
-            uniform_M = getModelView shade'
+            uniform_M = multmm (getProjection shade') (getModelView shade') 
             
             inv_MV = invert (multmm (getProjection shade') (getModelView shade'))
             uniform_MIT = case inv_MV of Just invProjMod -> transpose invProjMod

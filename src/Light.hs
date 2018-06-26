@@ -31,4 +31,4 @@ import Types
 import Util
 
 load_light :: IO Light
-load_light = return $ Light (toVec3D 1.0 1.0 0.0)
+load_light = return $ Light (toVec3D 1.0 1.0 (0.0)) 
