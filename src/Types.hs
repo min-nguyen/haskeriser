@@ -62,7 +62,7 @@ data Shader =   DepthShader
                                 getUniformM       :: Mat44 Double,
                                 getUniformMIT     :: Mat44 Double,
                                 getUniformMShadow :: Mat44 Double,
-                                getCurrentUV      :: Mat32 Double,
+                                getCurrentUV      :: Mat23 Double,
                                 getCurrentTri     :: Mat33 Double
                             }
 
@@ -160,7 +160,7 @@ type ZBuffer = V.Vector (Double, Vec4 Word8)
 type ScreenCoords = Vec3 (Vec3 Int) 
 
 rCONST_depth  :: Double
-rCONST_depth = 20.0
+rCONST_depth = 255.0
 
 screenWidth, screenHeight :: CInt
 (screenWidth, screenHeight) = (200, 200)

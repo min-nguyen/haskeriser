@@ -110,9 +110,13 @@ model_normal model uv = let (u, v)              =   fromVec2 uv
                             image               = normimg (getNormalMap model)
                             PixelRGBA8 r g b a  = pixelAt image u' v'
                             color = mapVec4 (fromIntegral) (toVec4 r g b a)
-                            rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 - 1.0) (((getElemV4 1 color)/255.0) * 2.0 - 1.0) (((getElemV4 0 color)/255.0) * 2.0 - 1.0)
-                        in  rgb
+                            rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 ) (((getElemV4 1 color)/255.0) * 2.0 ) (((getElemV4 0 color)/255.0) * 2.0 )
+                        in  debug (rgb) rgb
 
+
+
+
+                        
 valid_obj_num :: String  -> Bool
 valid_obj_num ""  = False
 valid_obj_num xs  =

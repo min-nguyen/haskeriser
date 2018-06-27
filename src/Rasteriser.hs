@@ -55,8 +55,8 @@ draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_m
 
         recurseVertex new_rasteriser new_shader 
             | py >= bbox_max_y                        =  (new_rasteriser, new_shader)
-            | px >= bbox_max_x && py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1))
-            | px < bbox_max_x &&  py <  bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)       
+            | px >= bbox_max_x &&  py < bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1))
+            | px <  bbox_max_x &&  py < bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)       
 
     in  case maybeBary of Nothing -> (recurseVertex rasteriser shader)
                           Just bary -> (    let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 

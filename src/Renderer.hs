@@ -72,22 +72,22 @@ process_triangle :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
 process_triangle rasteriser shader iface  = 
                         let ----------- VERTEX SHADER -----------
                             -- (zeroth_vertex, zeroth_shader) = vertex_shade shader ( rasteriser)  iface 0 
-                            (vertexes, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader ( rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
+                            (screenVertices, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader ( rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
                                                                                                        in  ((vs:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
                                                                          
 
-                            (vertex_x:vertex_y:vertex_z:_) = vertexes
+                            (screenVertX:screenVertY:screenVertZ:_) = screenVertices
 
                       
-                            (screen_coordinates, shader'') =  (toVec3 vertex_x vertex_y vertex_z, shader')  :: (Mat34 Double, Shader)
+                            (screenVertices', shader'') =  (toVec3 screenVertX screenVertY screenVertZ, shader')  :: (Mat34 Double, Shader)
                  
                             ----------- * TRIANGLE * -----------
 
                             -----------   SET BBOX -----------
 
-                            fetchx i = getElem 0 (getElem i screen_coordinates )
-                            fetchy i = getElem 1 (getElem i screen_coordinates )
-                            fetchw i = getElem 3 (getElem i screen_coordinates )
+                            fetchx i = getElem 0 (getElem i screenVertices' )
+                            fetchy i = getElem 1 (getElem i screenVertices' )
+                            fetchw i = getElem 3 (getElem i screenVertices' )
 
                             bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
                                             (1000000.0, 1000000.0)
@@ -99,8 +99,8 @@ process_triangle rasteriser shader iface  =
                         
                             --------------------------------------
                             
-                            (updated_rasteriser, updated_shader) =   (draw_triangle rasteriser shader'' screen_coordinates  (floor $ fst bboxmin, floor $ fst bboxmax) 
-                                                                                                                                                (floor $ snd bboxmin, floor $ snd bboxmax) 
+                            (updated_rasteriser, updated_shader) =   (draw_triangle rasteriser shader'' screenVertices'  (floor $ fst bboxmin, ceiling $ fst bboxmax) 
+                                                                                                                                                (floor $ snd bboxmin, ceiling $ snd bboxmax) 
                                                                                                                                                 (floor $ fst bboxmin) 
                                                                                                                                                 (floor $ snd bboxmin))
                                                 
