@@ -53,7 +53,7 @@ draw_loop rasteriser shader prev_mvp = do
          ----------- SET UP MVP MATRICES IN SHADER -----------
     shader' <- setup_shader rasteriser shader prev_mvp
 
-    let (ras', shade') = process_triangles rasteriser  shader' 0
+    (ras', shade') <- process_triangles rasteriser  shader' 0
     
 
 
@@ -61,64 +61,13 @@ draw_loop rasteriser shader prev_mvp = do
 
 
 
-process_triangles :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
-process_triangles rasteriser shader iface = go 
-    where go =  if (iface > (getNumFaces (getModel rasteriser) - 1)) 
-                then (rasteriser, shader)
-                else let (rasteriser', shader') = (process_triangle rasteriser shader iface)
-                     in (process_triangles rasteriser' shader' (iface + 1) )
-                     
-process_triangle :: Rasteriser -> Shader -> Int -> (Rasteriser, Shader)
-process_triangle rasteriser shader iface  = 
-                        let ----------- VERTEX SHADER -----------
-                            -- (zeroth_vertex, zeroth_shader) = vertex_shade shader ( rasteriser)  iface 0 
-                            (screenVertices, shader') = (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vs, folded_shader') = vertex_shade folded_shader ( rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
-                                                                                                       in  ((vs:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
-                                                                         
-
-                            (screenVertX:screenVertY:screenVertZ:_) = screenVertices
-
-                      
-                            (screenVertices', shader'') =  (toVec3 screenVertX screenVertY screenVertZ, shader')  :: (Mat34 Double, Shader)
-                 
-                            ----------- * TRIANGLE * -----------
-
-                            -----------   SET BBOX -----------
-
-                            fetchx i = getElem 0 (getElem i screenVertices' )
-                            fetchy i = getElem 1 (getElem i screenVertices' )
-                            fetchw i = getElem 3 (getElem i screenVertices' )
-
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
-                                            (1000000.0, 1000000.0)
-                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i)  ) |  i <- [0,1,2] ]
-
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  
-                                            ((-1000000.0), (-1000000.0))   
-                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i) ) |  i <- [0,1,2] ]
-                        
-                            --------------------------------------
-                            
-                            (updated_rasteriser, updated_shader) =   (draw_triangle rasteriser shader'' screenVertices'  (floor $ fst bboxmin, ceiling $ fst bboxmax) 
-                                                                                                                                                (floor $ snd bboxmin, ceiling $ snd bboxmax) 
-                                                                                                                                                (floor $ fst bboxmin) 
-                                                                                                                                                (floor $ snd bboxmin))
-                                                
-                           
-
-                        in  (updated_rasteriser, updated_shader)
-
-render_screen :: Rasteriser -> Shader -> IO [()]
-render_screen ras shader =
-                mapM (\index -> do 
-                                let screen = getScreen ras
-                                    px = index `mod` (width_i screen)
-                                    py = floor $ (to_double (index - px)) / (to_double (width_i screen))
-
-                                    rgba =  case shader of  (CameraShader {..}) -> vec4ToV4 $ snd $ (getZBuffer ras) V.! index
-                                                            (DepthShader  {..}) -> vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index
-
-                                (sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba))) [0 .. (length (getZBuffer ras) - 1)]        
+process_triangles :: Rasteriser -> Shader -> Int -> IO (Rasteriser, Shader)
+process_triangles rasteriser shader iface = do
+                    if   (iface > (getNumFaces (getModel rasteriser) - 1)) 
+                    then (return (rasteriser, shader))
+                    else ( do
+                        (rasteriser', shader') <- (process_triangle rasteriser shader iface)
+                        (process_triangles rasteriser' shader' (iface + 1) ))
 
 
 

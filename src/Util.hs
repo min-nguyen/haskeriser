@@ -206,8 +206,8 @@ projectVec4to3 v4 = let (x,y,z,w) = fromVec4 v4 in toVec3 x y z
 projectVec3to2 :: (Num a) => Vec3 a -> Vec2 a
 projectVec3to2 v3 = let (x,y,z) = fromVec3 v3 in toVec2 x y 
 
-projectVec4to2 :: (Num a) => Vec4 a -> Vec2 a
-projectVec4to2 v4 = let (x,y,z,w) = fromVec4 v4 in toVec2 x y 
+projectVec4to2D :: Vec4 Double -> Vec2 Double
+projectVec4to2D v4 = let (x,y,z,w) = fromVec4 v4 in toVec2 x y --(x/z) (y/z) 
 
 projectVec4to3D :: Vec4 Double -> Vec3 Double
 projectVec4to3D v4 = homogeneousToCartesian v4
@@ -250,21 +250,20 @@ or_Vec3 (a) (b) = toVec3D (ay * bz - az * by)  (az * bx - ax * bz)  (ax * by - a
       --- ‾------------------------------------------------------------------‾---
   
 mult_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
-mult_rgba_d rgba intensity =  let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
-                                    scale =  case () of _ 
+mult_rgba_d rgba intensity =  let   scale =  case () of _ 
                                                             | intensity > 1.0 -> 1.0
                                                             | intensity < 0.0 -> 0.0
                                                             | otherwise -> intensity
-                            
-                                    (r', g', b', a') = mapTuple4 ((fromInteger) . (floor) . (scale *)) (r, g, b, a)
-                                in  toVec4 r' g' b' a'
+                                    (r, g, b, a) = (mapTuple4 ((fromInteger) . (floor) . (scale *) . (fromIntegral)) (fromVec4 rgba) ) :: (Word8, Word8, Word8, Word8)
+                              in    toVec4 r g b a
+
 add_rgba_d ::  Vec4 Word8 -> Double -> Vec4 Word8
 add_rgba_d rgba scalar =      let   (r, g, b, a) = (mapTuple4 (fromIntegral) (fromVec4 rgba)) :: (Double, Double, Double, Double)
                                     addword8 = (\channel -> case () of _ 
-                                                                         | ((channel + scalar) > 255.0) -> 255
+                                                                         | ((channel + scalar) >= 255.0) -> 254
                                                                          | ((channel + scalar) < 0.0  ) -> 0
                                                                          | otherwise -> (fromInteger $ floor (channel + scalar)) ) :: Double -> Word8
-                                    (r', g', b', a') = (mapTuple4 addword8 (r, g, b, a))
+                                    (r', g', b', a') = (mapTuple4  ((addword8 ) . (fromIntegral). (fromIntegral)) (fromVec4 rgba)) 
                               in    toVec4 r' g' b' a' -- (fromInteger (floor a))
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                 Vec to SDL.Vector Conversions                  | | ---

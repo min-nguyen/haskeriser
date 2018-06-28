@@ -22,21 +22,18 @@ import Types
 import Util
 
 barycentric :: (Vec2 Double, Vec2 Double, Vec2 Double) -> Vec2 Double -> Maybe (Vec3 Double)
-barycentric (a, b, c) p =   let v0 = b - a
-                                v1 = c - a
-                                v2 = p - a
-                                d00 = Vec.dot v0 v0
-                                d01 = Vec.dot v0 v1
-                                d11 = Vec.dot v1 v1
-                                d20 = Vec.dot v2 v0
-                                d21 = Vec.dot v2 v1
-                                denom = d00 * d11 - d01 * d01
-                                v = (d11 * d20 - d01 * d21)/denom
-                                u = (d00 * d21 - d01 * d20)/denom
-                                w = 1.0 - v - u
+barycentric (a, b, c) p =   let ((ax, ay), (bx, by), (cx, cy), (px, py)) = mapTuple4 ((fromVec2)) (a, b, c, p)
+                                getX = getElem 0
+                                getY = getElem 1
 
-                            in (if ((0 <= u && u <= 1) && (0 <= v && v <= 1) && (u + v <= 1))
-                                then (Just (toVec3D u v w))
+                                sx = toVec3 (getX c - getX a) (getX b - getX a)  (getX a - getX p) 
+                                sy = toVec3 (getY c - getY a) (getY b - getY a)  (getY a - getY p) 
+                                (ux, uy, uz) = fromVec3 (cross sx sy)
+                        
+                                (w,u,v) = ((1.0 - (ux + uy)/uz), (uy/uz), (ux/uz))
+
+                            in  (if (u > 0.0 && v > 0.0 && u + v < 1.0 && 0 <= w)
+                                then (Just (toVec3D (1.0 - (ux + uy)/uz) (uy/uz) (ux/uz)))
                                 else Nothing)
 
 mvp_matrix :: Shader -> Shader
@@ -47,10 +44,10 @@ projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
                    
 
 viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
-viewport_matrix x y w h =             matFromLists [[w/2.0,   0,         0,          x+w/2.0],
-                                                    [0,       h/2.0,     0,          y+h/2.0],
-                                                    [0,       0,         rCONST_depth/2.0,    rCONST_depth/2.0],
-                                                    [0,       0,         0,          1.0]]
+viewport_matrix x y w h =             matFromLists [[w/2.0,   0,         0,                 x+w/2.0],
+                                                    [0,       h/2.0,     0,                 y+h/2.0],
+                                                    [0,       0,         rCONST_depth/2.0,  rCONST_depth/2.0],
+                                                    [0,       0,         0,                 1.0]]
 
 
 --                 EYE          CENTER        UP                                     

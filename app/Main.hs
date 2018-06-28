@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE BangPatterns #-}
 
         -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
         -- |                                                                        | -- 
@@ -46,10 +46,12 @@ loop draw_func model light camera depth_shader camera_shader = do
                         SDL.clear (renderer screen)
 
                         (ras'  , depth_shader')  <- draw_func ras  depth_shader (Vec.identity :: Mat44 Double)
-                        (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP depth_shader')) 
-                        render_screen ras'' camera_shader'
-                        SDL.present (renderer screen)
-                        -- unless quit (loop')
+                        print "depth"
+                        (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP depth_shader'))
+                        -- print (getZBuffer ras'')
+                        sequence [render_screen ras'' camera_shader' px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
+                        print "rendering"
+                        SDL.present (renderer screen) -- unless quit (loop')
         loop'
         ----- One loop freeze ----
         let loop'' = do

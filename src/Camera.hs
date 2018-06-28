@@ -29,4 +29,4 @@ import Util
 
 load_camera :: IO Camera
 load_camera = do
-    return $ Camera (toVec3D 0.0 0.0 (-2.0))
+    return $ Camera (toVec3D 1.0 1.0 (0.0))

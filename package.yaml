@@ -95,5 +95,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -XRecordWildCards
+    - -O2
+    - -BangPatterns
     dependencies:
     - keta

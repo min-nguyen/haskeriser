@@ -13,7 +13,7 @@ module Rasteriser
     where
 
 import Prelude hiding (any, mapM_)
-import SDL.Vect
+import SDL.Vect hiding (dot, normalize)
 import SDL (($=))
 import qualified SDL
 import Debug.Trace as Trace
@@ -27,8 +27,8 @@ import Light
 import Geometry
 import Util
 import Shader
-import Data.Vec as Vec hiding (map)
-import qualified Data.Vec as Vec  (map)
+import Data.Vec as Vec hiding (map, foldr)
+import qualified Data.Vec as Vec  (map, foldr)
 import Types
 
 load_zbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
@@ -42,38 +42,99 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer mode
                                         where zbuffer = load_zbuffer screen
                                               depthbuffer = load_shadowbuffer screen
 
+
+process_triangle :: Rasteriser -> Shader -> Int -> IO (Rasteriser, Shader)
+process_triangle rasteriser shader iface  = do
+                        let
+                            ----------- VERTEX SHADER -----------
+                            (screenVertices, shader') = 
+                                (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vertex, folded_shader') = vertex_shade folded_shader (rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
+                                                                                         
+                                                                                    in  ((vertex:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
+
+
+                            (screenVert0:screenVert1:screenVert2:_) = screenVertices
+
+                      
+                            (screenVertices', shader'') =  (toVec3 screenVert0 screenVert1 screenVert2, shader')  :: (Mat34 Double, Shader)
+                 
+                            ----------- * TRIANGLE * -----------
+
+                            -----------   SET BBOX -----------
+
+                            fetchx i = getElem 0 (getElem i screenVertices' )
+                            fetchy i = getElem 1 (getElem i screenVertices' )
+                            fetchw i = getElem 3 (getElem i screenVertices' )
+
+                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
+                                            (1000000.0, 1000000.0)
+                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i)  ) |  i <- [0,1,2] ]
+
+                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  
+                                            ((-1000000.0), (-1000000.0))   
+                                            [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i) ) |  i <- [0,1,2] ]
+                        
+                            --------------------------------------
+                            
+
+                        (updated_rasteriser, updated_shader) <- (draw_triangle rasteriser shader'' screenVertices'   (floor $ fst bboxmin, floor $ fst bboxmax)   
+                                                                                                                        (floor $ snd bboxmin, floor $ snd bboxmax) 
+                                                                                                                        (floor $ fst bboxmin) 
+                                                                                                                        (floor $ snd bboxmin) )
+                        return $ (updated_rasteriser, updated_shader)
+
+
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
-draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  (Rasteriser, Shader)
-draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py = 
-    let
-        -- Screen Coordinates
-        (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
-        ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4D (vertex_0, vertex_1, vertex_2)
-       
-        -- Coordinate Attributes
-        maybeBary = barycentric ( projectVec4to2 (mult_v4_num vertex_0 (1.0/w0) ) , projectVec4to2 (mult_v4_num vertex_1  (1.0/w1) ), projectVec4to2 (mult_v4_num vertex_2 (1.0/w2)) )  ( toVec2D (to_double px) (to_double py) )
+draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  IO (Rasteriser, Shader)
+draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py
+    | (py > bbox_max_y)                      = (return ((rasteriser, shader)))
+    | (px > bbox_max_x)                      = draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) bbox_min_x (py + 1)
+    | otherwise = do 
+                let
+                    -- Screen Coordinates
+                    (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
+                    ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4D (vertex_0, vertex_1, vertex_2)
+                
+                    -- Coordinate Attributes
+                    barycentric_inputs = (projectVec4to2D (mult_v4_num vertex_0 (1.0/w0) ) , projectVec4to2D (mult_v4_num vertex_1  (1.0/w1) ), projectVec4to2D (mult_v4_num vertex_2 (1.0/w2))) 
+                    pixel = (toVec2D (to_double px) (to_double py) )
+                    maybeBary = barycentric barycentric_inputs (toVec2D (to_double px) (to_double py) )
 
-        recurseVertex new_rasteriser new_shader 
-            | py >= bbox_max_y                        =  (new_rasteriser, new_shader)
-            | px >= bbox_max_x &&  py < bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  bbox_min_x (py + 1))
-            | px <  bbox_max_x &&  py < bbox_max_y    =  (draw_triangle new_rasteriser new_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y)  (px+1) py)       
-
-    in  case maybeBary of Nothing -> (recurseVertex rasteriser shader)
-                          Just bary -> (    let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 
-                                                w = (w0 * getElem 0 bary) + (w1 * getElem 1 bary) + (w2 * getElem 2 bary) 
-                                                frag_depth = (z/w) :: Double
+                -- print maybeBary
+                case maybeBary of   Nothing   -> (draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
+                                    Just bary -> (    do
                                                 
-                                                (updateBuffer, getBuffer) = case shader of  (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
-                                                                                            (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
+                                                let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 
+                                                    w = (w0 * getElem 0 bary) + (w1 * getElem 1 bary) + (w2 * getElem 2 bary) 
+                                                    frag_depth = (z/w) :: Double
+                                                    
+                                                    (updateBuffer, getBuffer) = case shader of  (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
+                                                                                                (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
 
-                                            in  (if ( (fst ((getBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth )
-                                                    then (recurseVertex rasteriser shader) 
-                                                    else let (rgba , updated_shader) = fragment_shade shader (rasteriser) bary
-                                                             updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
-                                                         in  (recurseVertex (updateBuffer (updated_buffer, rasteriser) ) updated_shader)))
-                                                
+                                                if ( (fst ((getBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth )
+                                                then  (draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
+                                                else ( do
+                                                    (rgba , updated_shader) <- fragment_shade shader (rasteriser) bary
+                                                    let updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
+                                                    draw_triangle (updateBuffer (updated_buffer, rasteriser) ) updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
+                                            
                                                           
+      
 
+render_screen :: Rasteriser -> Shader -> Int -> Int -> IO ()
+render_screen ras shader px py = do
+            
+                let screen = getScreen ras
+                    index = px + py * (width_i (getScreen ras))
+
+
+
+                let rgba =  case shader of  (CameraShader {..}) -> vec4ToV4 $ snd $ (getZBuffer ras) V.! index
+                                            (DepthShader  {..}) -> vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index
+                
+                sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba) 
+
+                                        
 
 
 

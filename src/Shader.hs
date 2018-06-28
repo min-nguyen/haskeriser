@@ -33,13 +33,13 @@ import Util
 vertex_shade :: Shader -> Rasteriser -> Int -> Int -> (Vec4 Double, Shader)
 vertex_shade (DepthShader modelview viewport projection mvp_mat varying_tri) ras iface nthvert = 
     let model = getModel ras
-        gl_vert = (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
-        gl_Vertex = multmv mvp_mat gl_vert  :: Vec4 Double
+        world_vert =  (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
+        (wx, wy, wz, ww) = fromVec4 world_vert
+        screen_vert = multmv mvp_mat world_vert  :: Vec4 Double
 
-        new_col =  (homogeneousToCartesian gl_Vertex) 
-        new_varying_tri = Vec.transpose $ Vec.setElem nthvert new_col (Vec.transpose $ varying_tri)
+        new_varying_tri = Vec.transpose $ Vec.setElem nthvert (homogeneousToCartesian screen_vert) (Vec.transpose $ varying_tri)
 
-    in (gl_Vertex, (DepthShader modelview viewport projection mvp_mat new_varying_tri) )
+    in ((screen_vert, (DepthShader modelview viewport projection mvp_mat new_varying_tri) ))
 
 vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow vary_uv vary_tri) 
         ras iface nthvert = 
@@ -55,43 +55,46 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
                 
                 new_vary_tri = Vec.transpose $ Vec.setElem nthvert gl_Vertex' (Vec.transpose $ vary_tri)
 
-            in (gl_Vertex, (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) )
+            in ((gl_Vertex, (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) ))
 
 
 
-fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> (Vec4 Word8, Shader)
+fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> IO (Vec4 Word8, Shader)
 fragment_shade shader ras bary_coords  = case shader of
 
     (DepthShader { getCurrentTri = current_tri, ..}) -> 
-       (let (px, py, pz) = (fromVec3D $ multmv current_tri bary_coords) :: (Double, Double, Double)    
-            color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (pz/rCONST_depth)
-        in  (color , shader)  )
-    
+       (do
+            let 
+                (px, py, pz) = (fromVec3D $ multmv current_tri bary_coords) :: (Double, Double, Double)    
+                color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (pz/rCONST_depth)
+            return $ (color , shader) )
+
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
-       (let shadowBuff = getDepthBuffer ras
+       (do
+            let shadowBuff = getDepthBuffer ras
+                sb_p                            = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
+                (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian  sb_p
 
-            sb_p                            = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
-            (sb_px, sb_py, sb_pz, sb_pw)    = fromVec4 sb_p
+                currentBufferValue              = fst(shadowBuff V.! (floor ( sb_px + sb_py * (fromIntegral screenWidth_i) )))
 
-            currentBufferValue              = fst(shadowBuff V.! (floor ( sb_px + sb_py * (fromIntegral screenWidth_i) )))
+                isVisible = if (currentBufferValue < sb_pz + 22.7) then sb_pz else currentBufferValue
 
-            isVisible = if (currentBufferValue < sb_pz) then sb_pz else currentBufferValue
+                shadow = (4000.0/((isVisible/125.0)*(isVisible/125.0))) :: Double
 
-            shadow = (4000.0/((isVisible/125.0)*(isVisible/125.0))) :: Double
+                uv = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
 
-            uv = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
-            n  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
-            l  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (Vec.normalize $ direction (getLight ras))) )  :: Vec3 Double
-            -- r  = (Vec.normalize $ (mult_v3_num n (mult_v3_num (multvv n l) 2.0)) - l ) :: Vec3 Double 
+                n  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
+                l  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (Vec.normalize $ direction (getLight ras))) )  :: Vec3 Double
+                -- r  = (Vec.normalize $ (mult_v3_num n (mult_v3_num (multvv n l) 2.0)) - l ) :: Vec3 Double
 
+            
+            let diff = (max 0.0 ((dot n l) :: Double) ) :: Double
 
-            diff = (max 0.0 ((dot n l) :: Double) ) :: Double
+                rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-            rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
+                color = add_rgba_d (mult_rgba_d rgba  ( ( shadow * ( 1.4 * diff + 0.4) + 0.4 * diff ) :: Double) ) (diff*40)
 
-            color = add_rgba_d (mult_rgba_d rgba  ( ( shadow * ( 1.4 * diff + 0.6)  ) :: Double) ) 20.0
-
-        in  (color , shader) )             
+            return $ (color , shader) )             
 
 
 load_depthshader :: Shader
@@ -137,10 +140,10 @@ setup_shader rasteriser shader previous_mvp = case shader of
             light_dir       = Vec.normalize $ direction light
         
             cam_pos         = position camera
-            depth_coeff     = ((-1.0)/(Vec.norm(eye-center)))
+            depth_coeff     = ((-1.0)/(Vec.norm(cam_pos-center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
+            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) cam_pos center up)
 
             uniform_M = (getModelView shade')
             
