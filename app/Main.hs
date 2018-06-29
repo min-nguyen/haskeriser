@@ -37,6 +37,7 @@ import Types
 loop :: (Rasteriser -> Shader -> (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> IO()
 loop draw_func model light camera depth_shader camera_shader = do
         screen <- sdl_init
+
         let ras = (load_rasteriser model screen camera light) :: Rasteriser
             loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
@@ -45,14 +46,16 @@ loop draw_func model light camera depth_shader camera_shader = do
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
 
+                        -- Raster with depth shader
                         (ras'  , depth_shader')  <- draw_func ras  depth_shader (Vec.identity :: Mat44 Double)
-                        print "depth"
+                        -- Raster with camera shader
                         (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP depth_shader'))
-                        -- print (getZBuffer ras'')
+                        -- Render
                         sequence [render_screen ras'' camera_shader' px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
-                        print "rendering"
-                        SDL.present (renderer screen) -- unless quit (loop')
+              
+                        SDL.present (renderer screen) 
         loop'
+
         ----- One loop freeze ----
         let loop'' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents

@@ -51,6 +51,22 @@ read_tga_color filepath = do
 						-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
 						_ -> ( ( ColorMapError)))
 
+read_tga_specular :: String -> IO SpecularMap
+read_tga_specular filepath = do
+	bytestr <- B.readFile filepath
+	
+	let contents = decodeTga bytestr
+	
+
+	case contents of 
+			Left s  -> return SpecularMapError
+			Right d -> (case d of
+				ImageY8  p' -> return  (SpecularMap (imageWidth $   p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent Pixel8))  (8) p')
+				-- ImageY16 c' -> (do
+				-- 			putStrLn "ye"
+				-- 			return (TGA_NormalMap (imageWidth $   c')  (imageHeight $  c') ((imageData c') :: V.Vector (Word8))  (8) c'))
+				-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
+				_ ->  return SpecularMapError)
 
 
 read_tga_normal :: String -> IO NormalMap

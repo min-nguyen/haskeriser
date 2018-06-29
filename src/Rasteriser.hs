@@ -44,22 +44,18 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer mode
 
 
 process_triangle :: Rasteriser -> Shader -> Int -> IO (Rasteriser, Shader)
-process_triangle rasteriser shader iface  = do
+process_triangle ras shader iface  = do
                         let
                             ----------- VERTEX SHADER -----------
                             (screenVertices, shader') = 
-                                (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vertex, folded_shader') = vertex_shade folded_shader (rasteriser) iface nth_vertex  :: ( (Vec4 Double), Shader)
+                                (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vertex, folded_shader') = vertex_shade folded_shader (ras) iface nth_vertex  :: ( (Vec4 Double), Shader)
                                                                                          
                                                                                     in  ((vertex:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
 
-
                             (screenVert0:screenVert1:screenVert2:_) = screenVertices
-
                       
                             (screenVertices', shader'') =  (toVec3 screenVert0 screenVert1 screenVert2, shader')  :: (Mat34 Double, Shader)
                  
-                            ----------- * TRIANGLE * -----------
-
                             -----------   SET BBOX -----------
 
                             fetchx i = getElem 0 (getElem i screenVertices' )
@@ -77,7 +73,7 @@ process_triangle rasteriser shader iface  = do
                             --------------------------------------
                             
 
-                        (updated_rasteriser, updated_shader) <- (draw_triangle rasteriser shader'' screenVertices'   (floor $ fst bboxmin, floor $ fst bboxmax)   
+                        (updated_rasteriser, updated_shader) <- (draw_triangle ras shader'' screenVertices'   (floor $ fst bboxmin, floor $ fst bboxmax)   
                                                                                                                         (floor $ snd bboxmin, floor $ snd bboxmax) 
                                                                                                                         (floor $ fst bboxmin) 
                                                                                                                         (floor $ snd bboxmin) )
@@ -86,9 +82,9 @@ process_triangle rasteriser shader iface  = do
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
 draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  IO (Rasteriser, Shader)
-draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py
-    | (py > bbox_max_y)                      = (return ((rasteriser, shader)))
-    | (px > bbox_max_x)                      = draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) bbox_min_x (py + 1)
+draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py
+    | (py > bbox_max_y)                      = (return ((ras, shader)))
+    | (px > bbox_max_x)                      = draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) bbox_min_x (py + 1)
     | otherwise = do 
                 let
                     -- Screen Coordinates
@@ -101,22 +97,23 @@ draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_m
                     maybeBary = barycentric barycentric_inputs (toVec2D (to_double px) (to_double py) )
 
                 -- print maybeBary
-                case maybeBary of   Nothing   -> (draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
+                case maybeBary of   Nothing   -> (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
                                     Just bary -> (    do
                                                 
                                                 let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 
                                                     w = (w0 * getElem 0 bary) + (w1 * getElem 1 bary) + (w2 * getElem 2 bary) 
-                                                    frag_depth = (z/w) :: Double
-                                                    
+                                                    -- frag_depth = (z/w) :: Double
+                                                    (_, _, frag_depth) = (fromVec3D $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
                                                     (updateBuffer, getBuffer) = case shader of  (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
                                                                                                 (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
 
-                                                if ( (fst ((getBuffer rasteriser) V.! (px + py * screenWidth_i))) > frag_depth )
-                                                then  (draw_triangle rasteriser shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
+                                                if ( (fst ((getBuffer ras) V.! (px + py * screenWidth_i))) > frag_depth )
+                                                then  (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
                                                 else ( do
-                                                    (rgba , updated_shader) <- fragment_shade shader (rasteriser) bary
-                                                    let updated_buffer = replaceAt  (frag_depth, rgba) (px + py * ( screenWidth_i )) (getBuffer rasteriser)
-                                                    draw_triangle (updateBuffer (updated_buffer, rasteriser) ) updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
+                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary (px + py * screenWidth_i)
+
+                                                    
+                                                    draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
                                             
                                                           
       

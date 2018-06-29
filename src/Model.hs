@@ -70,18 +70,15 @@ load_model = do
         verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
         uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
-   
+
+
+    spec_map_file <- read_tga_specular "resources/african_head_spec.tga"
     diffuse_map_file <- read_tga_color "resources/african_head_diffuse.tga"
     normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
 
-    -- case normal_map_file of 
-    --     NormalMap _ _ _ _ _ -> print "normal"
-    --     NormalError         -> print "error"
-    --     _                   -> print "error?"
+    let model = Model verts'' faces'' norms'' uvs'' (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
 
-
-    print (length faces'')
-    return $ Model verts'' faces'' norms'' uvs'' (length faces'') (length verts'') diffuse_map_file normal_map_file
+    return model
 
 
 
@@ -98,7 +95,7 @@ model_uv model iface nvert =                        (let y          = fromIntegr
 
 model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
-                                (u',v') =  (floor (u * (fromIntegral (imgwidth $ getDiffuseMap model)))  ,  floor (v * (fromIntegral (imgheight $ getDiffuseMap model)) ))
+                                (u',v') =  (floor ( u * (fromIntegral (imgwidth $ getDiffuseMap model)) ) ,  floor ( (fromIntegral $ imgheight $ getDiffuseMap model) - v * (fromIntegral (imgheight $ getDiffuseMap model)) ) )
                                 dm =  (getDiffuseMap model)
                                 image = img dm
                                 PixelRGB8 r g b = pixelAt image u' v'
@@ -106,12 +103,21 @@ model_diffuse model uv = let    (u, v) = fromVec2 uv
 
 model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
 model_normal model uv = let (u, v)              =   fromVec2 uv
-                            (u', v')            =  (floor (u * (fromIntegral (normwidth $ getNormalMap model)))  ,  floor (v * (fromIntegral (normheight $ getNormalMap model)) ))
+                            (u', v')            =  (floor (u * (fromIntegral (normwidth $ getNormalMap model)))  ,  floor ( fromIntegral (normheight $ getNormalMap model) - v * (fromIntegral (normheight $ getNormalMap model)) ))
                             image               =   (normimg (getNormalMap model))
                             PixelRGBA8 r g b a  = pixelAt image u' v'
                             color = mapVec4 (fromIntegral) (toVec4 r g b a)
                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 ) (((getElemV4 1 color)/255.0) * 2.0 ) (((getElemV4 0 color)/255.0) * 2.0 )
                         in  rgb
+
+
+model_specular :: Model -> Vec.Vec2 Double -> Double                        
+model_specular model uv =   let (u, v)              =   fromVec2 uv
+                                (u', v')            =  (floor (u * (fromIntegral (specwidth $ getSpecularMap model)))  ,  floor ( fromIntegral (specheight $ getSpecularMap model) - v * (fromIntegral (specheight $ getSpecularMap model)) ))
+                                image               =   (specimg (getSpecularMap model))
+                                ee  =  (pixelAt image u' v')
+                            in  (fromIntegral ee)
+
 
 
 model_face_normal :: Model -> Int -> Vec.Vec3 Double

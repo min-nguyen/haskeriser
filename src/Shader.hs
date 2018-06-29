@@ -59,27 +59,27 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
 
 
 
-fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> IO (Vec4 Word8, Shader)
-fragment_shade shader ras bary_coords  = case shader of
+fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> Int -> IO (Rasteriser, Shader)
+fragment_shade shader ras bary_coords index = case shader of
 
     (DepthShader { getCurrentTri = current_tri, ..}) -> 
        (do
             let 
-                (px, py, pz) = (fromVec3D $ multmv current_tri bary_coords) :: (Double, Double, Double)    
-                color = mult_rgba_d ((toVec4 255 255 255 255) :: Vec4 Word8) (pz/rCONST_depth)
-            return $ (color , shader) )
+                (_, _, pz) = (fromVec3D $ multmv current_tri bary_coords) :: (Double, Double, Double)
+                updatedbuffer = replaceAt  (pz, toVec4 0 0 0 0) index (getDepthBuffer ras)
+                updatedras = ras {getDepthBuffer = updatedbuffer}
+            return $ (updatedras , shader) )
 
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
        (do
             let shadowBuff = getDepthBuffer ras
+                (_, _, pz) = (fromVec3D $ multmv vary_tri bary_coords) :: (Double, Double, Double)
                 sb_p                            = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
                 (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian  sb_p
 
                 currentBufferValue              = fst(shadowBuff V.! (floor ( sb_px + sb_py * (fromIntegral screenWidth_i) )))
-
-                isVisible = if (currentBufferValue < sb_pz + 22.7) then sb_pz else currentBufferValue
-
-                shadow = (4000.0/((isVisible/125.0)*(isVisible/125.0))) :: Double
+               
+                isVisible = if (pz > sb_pz ) then sb_pz else 1.0
 
                 uv = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
 
@@ -92,9 +92,12 @@ fragment_shade shader ras bary_coords  = case shader of
 
                 rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-                color = add_rgba_d (mult_rgba_d rgba  ( ( shadow * ( 1.4 * diff + 0.4) + 0.4 * diff ) :: Double) ) (diff*40)
+                color =  (add_rgba_d (mult_rgba_d (rgba)   ( isVisible * ( 1.1 * diff + 0.2 ) :: Double)) (10))
 
-            return $ (color , shader) )             
+            let updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
+                updatedras = ras {getZBuffer = updatedbuffer}
+
+            return $ (updatedras , shader) )             
 
 
 load_depthshader :: Shader
@@ -140,10 +143,10 @@ setup_shader rasteriser shader previous_mvp = case shader of
             light_dir       = Vec.normalize $ direction light
         
             cam_pos         = position camera
-            depth_coeff     = ((-1.0)/(Vec.norm(cam_pos-center)))
+            depth_coeff     = ((-1.0)/(Vec.norm( (toVec3 1.0 2.5 1.70) - center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) cam_pos center up)
+            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) (toVec3 1.0 2.5 1.70) center up)
 
             uniform_M = (getModelView shade')
             

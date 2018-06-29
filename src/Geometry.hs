@@ -85,4 +85,4 @@ eye :: Vec3 Double
 eye = toVec3D 1.0 1.0 4.0
 
 up :: Vec3 Double
-up = toVec3D 0.0 1.0 0.0
+up = toVec3D 0.0 1.0 0.0 
