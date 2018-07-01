@@ -96,21 +96,19 @@ draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, b
                     pixel = (toVec2D (to_double px) (to_double py) )
                     maybeBary = barycentric barycentric_inputs (toVec2D (to_double px) (to_double py) )
 
-                -- print maybeBary
+
                 case maybeBary of   Nothing   -> (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
                                     Just bary -> (    do
                                                 
-                                                let z = (z0 * getElem 0 bary) + (z1 * getElem 1 bary) + (z2 * getElem 2 bary) 
-                                                    w = (w0 * getElem 0 bary) + (w1 * getElem 1 bary) + (w2 * getElem 2 bary) 
-                                                    -- frag_depth = (z/w) :: Double
-                                                    (_, _, frag_depth) = (fromVec3D $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
-                                                    (updateBuffer, getBuffer) = case shader of  (CameraShader {..}) -> ( (\(new_buff, ras) -> ras {getZBuffer = new_buff} ) , (\ras -> getZBuffer ras))
-                                                                                                (DepthShader  {..}) -> ( (\(new_buff, ras) -> ras {getDepthBuffer = new_buff} ) , (\ras -> getDepthBuffer ras))
+                                                let (_, _, frag_depth) = (fromVec3D $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
+                                                    pixelIndex = (px + py * screenWidth_i)
+                                                    getBuffer = case shader of  (CameraShader {..}) -> (\ras -> getZBuffer ras)
+                                                                                (DepthShader  {..}) -> (\ras -> getDepthBuffer ras)
 
-                                                if ( (fst ((getBuffer ras) V.! (px + py * screenWidth_i))) > frag_depth )
+                                                if ( (fst ((getBuffer ras) V.! pixelIndex )) > frag_depth )
                                                 then  (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py)
                                                 else ( do
-                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary (px + py * screenWidth_i)
+                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
 
                                                     
                                                     draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 

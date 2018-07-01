@@ -33,11 +33,14 @@ import Light
 import Rasteriser
 import Shader
 import Types
+import Text.Printf
+import Control.Exception
+import System.CPUTime
 
 loop :: (Rasteriser -> Shader -> (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> IO()
 loop draw_func model light camera depth_shader camera_shader = do
         screen <- sdl_init
-
+        start <- getCPUTime
         let ras = (load_rasteriser model screen camera light) :: Rasteriser
             loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
@@ -55,7 +58,9 @@ loop draw_func model light camera depth_shader camera_shader = do
               
                         SDL.present (renderer screen) 
         loop'
-
+        end   <- getCPUTime
+        let diff = (fromIntegral (end - start)) / (10^12)
+        printf "Computation time: %0.3f sec\n" (diff :: Double)
         ----- One loop freeze ----
         let loop'' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents

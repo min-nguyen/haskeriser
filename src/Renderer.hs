@@ -53,22 +53,15 @@ draw_loop rasteriser shader prev_mvp = do
          ----------- SET UP MVP MATRICES IN SHADER -----------
     shader' <- setup_shader rasteriser shader prev_mvp
 
-    (ras', shade') <- process_triangles rasteriser  shader' 0
-    
-
+    (ras', shade') <- process_triangles rasteriser  shader' 
 
     return (ras', shade')
 
 
 
-process_triangles :: Rasteriser -> Shader -> Int -> IO (Rasteriser, Shader)
-process_triangles rasteriser shader iface = do
-                    if   (iface > (getNumFaces (getModel rasteriser) - 1)) 
-                    then (return (rasteriser, shader))
-                    else ( do
-                        (rasteriser', shader') <- (process_triangle rasteriser shader iface)
-                        (process_triangles rasteriser' shader' (iface + 1) ))
-
+process_triangles :: Rasteriser -> Shader -> IO (Rasteriser, Shader)
+process_triangles rasteriser shader = foldM f (rasteriser, shader) [0 .. (getNumFaces (getModel rasteriser) - 1)] 
+    where f = \(ras', shader') iface -> (process_triangle ras' shader' iface)
 
 
 -- parallel :: V.Vector (Double, Vec4 Word8) ->  [[((Vec3 Double, Vec3 Double, Vec3 Double), (Vec3 Double, Vec3 Double, Vec3 Double))]] -> Light -> Model -> Screen ->  V.Vector (Double, Vec4 Word8)

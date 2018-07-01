@@ -101,6 +101,8 @@ data Triangle = Triangle {
                             color   :: Vec4 Word8 
                          }
 
+
+
 data ColorMap =  ColorMap  {  
                                     imgwidth   :: {-# UNPACK #-} !Int,
                                     imgheight  :: {-# UNPACK #-} !Int,
