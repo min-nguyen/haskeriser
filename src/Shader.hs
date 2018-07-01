@@ -30,32 +30,32 @@ import Util
 
 
 
-vertex_shade :: Shader -> Rasteriser -> Int -> Int -> (Vec4 Double, Shader)
-vertex_shade (DepthShader modelview viewport projection mvp_mat varying_tri) ras iface nthvert = 
-    let model = getModel ras
-        world_vert =  (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
-        (wx, wy, wz, ww) = fromVec4 world_vert
-        screen_vert = multmv mvp_mat world_vert  :: Vec4 Double
+vertex_shade :: Shader -> Rasteriser -> Face (Mat33 Double) (Mat32 Double) (Mat33 Double)  -> (Mat34 Double, Shader)
+vertex_shade (DepthShader modelview viewport projection mvp_mat varying_tri) ras face = 
+    let 
+        Face (vertices) (uvs) (vertnorms) = face
+        model = getModel ras
+   
+        screen_vert = (Vec.transpose) $ (multmm :: Mat44 Double -> Mat43 Double -> Mat43 Double) (mvp_mat :: Mat44 Double) (((Vec.transpose :: Mat34 Double -> Mat43 Double) $ Vec.map cartesianToHomogeneous vertices) :: Mat43 Double)   
 
-        new_varying_tri = Vec.transpose $ Vec.setElem nthvert (homogeneousToCartesian screen_vert) (Vec.transpose $ varying_tri)
+        new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
 
     in ((screen_vert, (DepthShader modelview viewport projection mvp_mat new_varying_tri) ))
 
 vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow vary_uv vary_tri) 
-        ras iface nthvert = 
+        ras face = 
             let model = getModel ras
-                vert_uv     = ((model_uv model iface nthvert ) :: Vec2 Double)
-                new_vary_uv  = (Vec.transpose (setElemV3 nthvert (Vec.transpose vary_uv) vert_uv)) :: Mat23 Double
+                Face (vertices) (uvs) (vertnorms) = face
+              
+                new_vary_uv  = (Vec.transpose uvs) :: Mat23 Double
 
-                vert_coords = (cartesianToHomogeneous $ model_vert model iface nthvert ) :: Vec4 Double
+               
 
-                gl_Vertex =  multmv mvp_mat vert_coords  :: Vec4 Double
-                gl_Vertex' = (homogeneousToCartesian gl_Vertex ) :: Vec3 Double
+                screen_vert = (Vec.transpose) $ (multmm :: Mat44 Double -> Mat43 Double -> Mat43 Double) (mvp_mat :: Mat44 Double) (((Vec.transpose :: Mat34 Double -> Mat43 Double) $ Vec.map cartesianToHomogeneous vertices) :: Mat43 Double)  
+                new_vary_tri = Vec.transpose $  (Vec.map homogeneousToCartesian) screen_vert
 
-                
-                new_vary_tri = Vec.transpose $ Vec.setElem nthvert gl_Vertex' (Vec.transpose $ vary_tri)
 
-            in ((gl_Vertex, (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) ))
+            in ((screen_vert, (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) ))
 
 
 
@@ -74,8 +74,7 @@ fragment_shade shader ras bary_coords index = case shader of
        (do
             let shadowBuff = getDepthBuffer ras
                 (_, _, pz) = (fromVec3D $ multmv vary_tri bary_coords) :: (Double, Double, Double)
-                sb_p                            = (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords))) :: Vec4 Double   
-                (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian  sb_p
+                (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords)))
 
                 currentBufferValue              = fst(shadowBuff V.! (floor ( sb_px + sb_py * (fromIntegral screenWidth_i) )))
                
@@ -84,7 +83,7 @@ fragment_shade shader ras bary_coords index = case shader of
                 uv = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
 
                 n  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
-                l  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (Vec.normalize $ direction (getLight ras))) )  :: Vec3 Double
+                l  = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
                 -- r  = (Vec.normalize $ (mult_v3_num n (mult_v3_num (multvv n l) 2.0)) - l ) :: Vec3 Double
 
             
@@ -128,7 +127,7 @@ setup_shader rasteriser shader previous_mvp = case shader of
 
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
-            light_dir       = Vec.normalize $ direction light
+            light_dir       = direction light
             depth_coeff     = 0.0
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
@@ -140,13 +139,13 @@ setup_shader rasteriser shader previous_mvp = case shader of
 
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
-            light_dir       = Vec.normalize $ direction light
+            light_dir       = direction light
         
             cam_pos         = position camera
-            depth_coeff     = ((-1.0)/(Vec.norm( (toVec3 1.0 2.5 1.70) - center)))
+            depth_coeff     = ((-1.0)/(Vec.norm( (cam_pos) - center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shade' = (mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) (toVec3 1.0 2.5 1.70) center up)
+            shade' = mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) cam_pos center up
 
             uniform_M = (getModelView shade')
             

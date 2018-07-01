@@ -33,11 +33,11 @@ barycentric (a, b, c) p =   let ((ax, ay), (bx, by), (cx, cy), (px, py)) = mapTu
                                 (w,u,v) = ((1.0 - (ux + uy)/uz), (uy/uz), (ux/uz))
 
                             in  (if (u > 0.0 && v > 0.0 && u + v < 1.0 && 0 <= w)
-                                then (Just (toVec3D (1.0 - (ux + uy)/uz) (uy/uz) (ux/uz)))
+                                then (Just (toVec3D w u v))
                                 else Nothing)
 
 mvp_matrix :: Shader -> Shader
-mvp_matrix shader = shader { getMVP = (multmm (getViewport shader) (multmm (getProjection shader) (getModelView shader))) }
+mvp_matrix shader = let mvp = (multmm (getViewport shader) (multmm (getProjection shader) (getModelView shader))) in shader { getMVP = mvp }
 
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity

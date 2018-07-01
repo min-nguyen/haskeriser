@@ -60,8 +60,8 @@ draw_loop rasteriser shader prev_mvp = do
 
 
 process_triangles :: Rasteriser -> Shader -> IO (Rasteriser, Shader)
-process_triangles rasteriser shader = foldM f (rasteriser, shader) [0 .. (getNumFaces (getModel rasteriser) - 1)] 
-    where f = \(ras', shader') iface -> (process_triangle ras' shader' iface)
+process_triangles rasteriser shader = foldM f (rasteriser, shader) (getFace (getModel rasteriser))
+    where f = \(ras', shader') face -> (process_triangle ras' shader' face)
 
 
 -- parallel :: V.Vector (Double, Vec4 Word8) ->  [[((Vec3 Double, Vec3 Double, Vec3 Double), (Vec3 Double, Vec3 Double, Vec3 Double))]] -> Light -> Model -> Screen ->  V.Vector (Double, Vec4 Word8)

@@ -46,37 +46,77 @@ data Rasteriser = Rasteriser
 
 data Shader =   DepthShader 
                             {
-                                getModelView   :: Mat44 Double,
-                                getViewport    :: Mat44 Double,
-                                getProjection  :: Mat44 Double,
-                                getMVP         :: Mat44 Double,
-                                getCurrentTri  :: Mat33 Double
+                                getModelView   :: {-# UNPACK #-} !(Mat44 Double),
+                                getViewport    :: {-# UNPACK #-} !(Mat44 Double),
+                                getProjection  :: {-# UNPACK #-} !(Mat44 Double),
+                                getMVP         :: {-# UNPACK #-} !(Mat44 Double),
+                                getCurrentTri  :: {-# UNPACK #-} !(Mat33 Double)
                             }
 
                 | CameraShader 
                             {
-                                getModelView      :: Mat44 Double,
-                                getViewport       :: Mat44 Double,
-                                getProjection     :: Mat44 Double,
-                                getMVP            :: Mat44 Double,
-                                getUniformM       :: Mat44 Double,
-                                getUniformMIT     :: Mat44 Double,
-                                getUniformMShadow :: Mat44 Double,
-                                getCurrentUV      :: Mat23 Double,
-                                getCurrentTri     :: Mat33 Double
+                                getModelView      :: {-# UNPACK #-} !(Mat44 Double),
+                                getViewport       :: {-# UNPACK #-} !(Mat44 Double),
+                                getProjection     :: {-# UNPACK #-} !(Mat44 Double),
+                                getMVP            :: {-# UNPACK #-} !(Mat44 Double),
+                                getUniformM       :: {-# UNPACK #-} !(Mat44 Double),
+                                getUniformMIT     :: {-# UNPACK #-} !(Mat44 Double),
+                                getUniformMShadow :: {-# UNPACK #-} !(Mat44 Double),
+                                getCurrentUV      :: {-# UNPACK #-} !(Mat23 Double),
+                                getCurrentTri     :: {-# UNPACK #-} !(Mat33 Double)
                             }
 
 data Model  =   Model       {    
-                                getVerts       :: V.Vector (Vec3 Double, Int),
-                                getFaces       :: V.Vector ([(Vec3 Integer, Int)]),
-                                getNorms       :: V.Vector (Vec3 Double, Int),
-                                getUVs         :: V.Vector (Vec2 Double, Int),
+                                getFace        :: [Face (Mat33 Double) (Mat32 Double) (Mat33 Double) ],
                                 getNumFaces :: Int,
                                 getNumVerts :: Int,
                                 getDiffuseMap :: ColorMap,
                                 getNormalMap :: NormalMap,
                                 getSpecularMap :: SpecularMap
                             }
+
+data Face       a b c      = Face (a) (b ) (c)
+data Vertices    a          = Vertices a a a
+data UVs         b          = UVs b b b
+data VerticeNormals  c      = VerticeNormals c c c
+data Vertex3       a        = Vertex3 a a a
+data Vertex2       a        = Vertex2 a a
+
+instance Functor Vertices where
+    fmap f (Vertices x y z) = Vertices (f x) (f y) (f z)
+
+instance Applicative Vertices where
+    pure a = Vertices a a a 
+    Vertices f g h <*> Vertices a b c = Vertices (f a) (g b) (h c)
+
+instance Functor UVs where
+    fmap f (UVs x y z) = UVs (f x) (f y) (f z)
+
+instance Applicative UVs where
+    pure a = UVs a a a 
+    UVs f g h <*> UVs a b c = UVs (f a) (g b) (h c) 
+
+instance Functor VerticeNormals where
+    fmap f (VerticeNormals x y z) = VerticeNormals (f x) (f y) (f z)
+
+instance Applicative VerticeNormals where
+    pure a = VerticeNormals a a a 
+    VerticeNormals f g h <*> VerticeNormals a b c = VerticeNormals (f a) (g b) (h c)
+
+instance Functor Vertex3 where
+    fmap f (Vertex3 x y z) = Vertex3 (f x) (f y) (f z)
+
+instance Applicative Vertex3 where
+    pure a = Vertex3 a a a 
+    Vertex3 f g h <*> Vertex3 a b c = Vertex3 (f a) (g b) (h c)
+
+instance Functor Vertex2 where
+    fmap f (Vertex2 x y ) = Vertex2 (f x) (f y) 
+
+instance Applicative Vertex2 where
+    pure a = Vertex2 a a 
+    Vertex2 f g  <*> Vertex2 a b  = Vertex2 (f a) (g b) 
+
 
 data Light  = Light {
                         direction   :: Vec3 Double
@@ -187,4 +227,8 @@ screenWidth_i, screenHeight_i :: Int
 screenWidth_d, screenHeight_d :: Double
 (screenWidth_d, screenHeight_d) = (200, 200)
 
-    
+vec2ToVertex2 :: Vec2 a -> Vertex2 a
+vec2ToVertex2 (x:.y:.()) = Vertex2 x y
+
+vec3ToVertex3 :: Vec3 a -> Vertex3 a
+vec3ToVertex3 (x:.y:.z:.()) = Vertex3 x y z

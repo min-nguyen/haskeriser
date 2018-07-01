@@ -76,22 +76,28 @@ load_model = do
     diffuse_map_file <- read_tga_color "resources/african_head_diffuse.tga"
     normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
 
-    let model = Model verts'' faces'' norms'' uvs'' (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
-
+    let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) faces''
+        model = Model facelist (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
     return model
 
+load_faces :: V.Vector (Vec.Vec3 Double) -> V.Vector (Vec.Vec2 Double) -> V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> [Face (Vec.Mat33 Double) (Vec.Mat32 Double) (Vec.Mat33 Double) ]
+load_faces verts uvs vertnorms obj_faces = [ Face (face_verts  verts i) (face_uvs  uvs i) (face_vertnorms  vertnorms i)  | i <- [0 .. (length obj_faces - 1)]]
+    where   face_vertnorms   vertnorms iface =  (toVec3 (model_vertnorms  vertnorms obj_faces iface 0)  (model_vertnorms  vertnorms obj_faces iface 1) (model_vertnorms  vertnorms obj_faces iface 2))
+            face_verts   verts iface =  (toVec3 (model_vert  verts obj_faces iface 0)  (model_vert  verts  obj_faces iface 1) (model_vert  verts obj_faces iface 2))
+            face_uvs    uvs iface =  (toVec3 (model_uv  uvs obj_faces iface 0)  (model_uv  uvs obj_faces iface 1) (model_uv  uvs obj_faces iface 2))
 
+model_vert :: V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> Int -> Int -> Vec.Vec3 Double
+model_vert verts obj_faces iface nvert  =  ( (verts V.! (fromIntegral ( (Vec.getElem 0 (fst ((obj_faces V.! iface) !! nvert))) )  )  ))
 
-model_face :: Model -> Int -> [Integer]
-model_face model ind =  [x | face_Vec3 <- ((getFaces model) V.! ind), let  (x, y, z) = fromVec3 (fst face_Vec3)]
+model_uv :: V.Vector (Vec.Vec2 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> Int -> Int -> Vec.Vec2 Double
+model_uv uvs obj_faces iface nvert =                        ( let   y          =  fromIntegral ( (Vec.getElem 1 (fst (( obj_faces V.! iface) !! nvert))) )  
+                                                                    uv         =  (uvs V.! y)
+                                                              in    uv) --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
 
-model_vert :: Model -> Int -> Int -> Vec.Vec3 Double
-model_vert model iface nvert  =  (fst ((getVerts model) V.! (fromIntegral ( (Vec.getElem 0 (fst (( (getFaces model) V.! iface) !! nvert))) )  )  ))
-
-model_uv :: Model -> Int -> Int -> Vec.Vec2 Double
-model_uv model iface nvert =                        (let y          = fromIntegral ( (Vec.getElem 1 (fst (( (getFaces model) V.! iface) !! nvert))) )  
-                                                         uv         = fst ((getUVs model) V.! y)
-                                                     in  uv) --toVec2  (floor (x' * (fromIntegral $ width $ diffuse_map model)))  (floor (y' * (fromIntegral $ height $ diffuse_map model))) ----- UPDATE THIS
+model_vertnorms ::  V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> Int -> Int -> Vec.Vec3 Double
+model_vertnorms vertnorms obj_faces iface nvert =       ( let z          = fromIntegral ( (Vec.getElem 2 (fst (( obj_faces V.! iface) !! nvert))) )  
+                                                              vertnorm   =  ((vertnorms) V.! z)
+                                                          in  vertnorm)
 
 model_diffuse :: Model -> Vec.Vec2 Double -> Vec.Vec4 Word8
 model_diffuse model uv = let    (u, v) = fromVec2 uv
@@ -120,9 +126,9 @@ model_specular model uv =   let (u, v)              =   fromVec2 uv
 
 
 
-model_face_normal :: Model -> Int -> Vec.Vec3 Double
-model_face_normal model iface = let (v0,v1,v2) = mapTuple3 ((model_vert model iface)) (0, 1, 2)
-                                in  Vec.normalize $ Vec.cross (v2 - v1) (v1 - v0)
+-- model_face_normal :: Model -> Int -> Vec.Vec3 Double
+-- model_face_normal model iface = let (v0,v1,v2) = mapTuple3 ((model_vert model iface)) (0, 1, 2)
+--                                 in  Vec.normalize $ Vec.cross (v2 - v1) (v1 - v0)
 
                         
 valid_obj_num :: String  -> Bool

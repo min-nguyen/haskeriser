@@ -278,3 +278,7 @@ vec3ToV3 (x:.y:.z:.()) = V3 x y z
 vec4ToV4 :: Vec4 a -> V4 a
 vec4ToV4 (x:.y:.z:.w:.()) = V4 x y z w
 
+
+
+-- vec4ToV4 :: Vec4 a -> V4 a
+-- vec4ToV4 (x:.y:.z:.w:.()) = V4 x y z w

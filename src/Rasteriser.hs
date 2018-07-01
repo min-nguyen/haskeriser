@@ -43,24 +43,19 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer mode
                                               depthbuffer = load_shadowbuffer screen
 
 
-process_triangle :: Rasteriser -> Shader -> Int -> IO (Rasteriser, Shader)
-process_triangle ras shader iface  = do
+process_triangle :: Rasteriser -> Shader -> Face (Mat33 Double) (Mat32 Double) (Mat33 Double) -> IO (Rasteriser, Shader)
+process_triangle ras shader face  = do
                         let
                             ----------- VERTEX SHADER -----------
-                            (screenVertices, shader') = 
-                                (foldr (\nth_vertex (vert_coords, folded_shader) -> (let (vertex, folded_shader') = vertex_shade folded_shader (ras) iface nth_vertex  :: ( (Vec4 Double), Shader)
-                                                                                         
-                                                                                    in  ((vertex:vert_coords), folded_shader'))) (([]), shader) [0, 1, 2]) :: ( [Vec4 Double], Shader)
+                            Face (vertices) (uvs) (vertnorms) = face
 
-                            (screenVert0:screenVert1:screenVert2:_) = screenVertices
-                      
-                            (screenVertices', shader'') =  (toVec3 screenVert0 screenVert1 screenVert2, shader')  :: (Mat34 Double, Shader)
-                 
+                            (screenVertices, shader') =  vertex_shade shader (ras) face 
+
                             -----------   SET BBOX -----------
 
-                            fetchx i = getElem 0 (getElem i screenVertices' )
-                            fetchy i = getElem 1 (getElem i screenVertices' )
-                            fetchw i = getElem 3 (getElem i screenVertices' )
+                            fetchx i = getElem 0 (getElem i screenVertices )
+                            fetchy i = getElem 1 (getElem i screenVertices )
+                            fetchw i = getElem 3 (getElem i screenVertices )
 
                             bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
                                             (1000000.0, 1000000.0)
@@ -73,7 +68,7 @@ process_triangle ras shader iface  = do
                             --------------------------------------
                             
 
-                        (updated_rasteriser, updated_shader) <- (draw_triangle ras shader'' screenVertices'   (floor $ fst bboxmin, floor $ fst bboxmax)   
+                        (updated_rasteriser, updated_shader) <- (draw_triangle ras shader' screenVertices   (floor $ fst bboxmin, floor $ fst bboxmax)   
                                                                                                                         (floor $ snd bboxmin, floor $ snd bboxmax) 
                                                                                                                         (floor $ fst bboxmin) 
                                                                                                                         (floor $ snd bboxmin) )
