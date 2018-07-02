@@ -22,6 +22,7 @@ import Data.Vec as Vec hiding (foldr)
 import Camera
 import Model
 import SDLx
+import Control.Monad.Par
 import Light
 import Geometry
 import Types
@@ -70,7 +71,7 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
 
 
 
-fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> Int -> IO (Rasteriser, Shader)
+fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> Int -> Par (Rasteriser, Shader)
 fragment_shade shader ras bary_coords index = case shader of
 
     (DirectionalLightShader { getCurrentTri = current_tri, ..}) -> 
@@ -110,7 +111,7 @@ fragment_shade shader ras bary_coords index = case shader of
 
                 rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
 
-                color =  (add_rgba_d (mult_rgba_d (rgba)   ( isVisible * ( 1.1 * diff + 0.6 * spec ) :: Double)) (10))
+                color =  (add_rgba_d (mult_rgba_d (rgba)   ( isVisible * ( 1.1 * diff * 0.6 * spec ) :: Double)) (10))
 
             let updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
                 updatedras = ras {getZBuffer = updatedbuffer}

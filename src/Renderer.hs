@@ -16,7 +16,7 @@ import Data.Vec as Vec hiding (take, drop, foldr, map, length)
 import qualified Data.Vec as Vec (take, drop, foldr, map, length)
 import Control.Monad hiding (mapM_)
 import Control.Arrow ((***))
-import Control.Monad.Par
+import Control.Monad.Par as Par
 import Control.Concurrent
 import Control.Monad.Trans.Class 
 import Data.Foldable hiding (elem)
@@ -43,24 +43,38 @@ import Shader
 import Model
 import Types
 
+pardraw :: Rasteriser -> Shader ->  (Rasteriser, Shader)
+pardraw rasteriser shader  =  runPar ( do
+    let chunk_total = getNumFaces $ getModel rasteriser
+        chunk_size = floor ((to_double chunk_total)/2.0)
+    f1 <-  (spawn (process_triangles rasteriser  shader 0 (chunk_size*1 - 1)))
+    f2 <-  (spawn (process_triangles rasteriser  shader (chunk_size*1)(chunk_size - 1)))
+    -- f3 <-  (spawn (process_triangles rasteriser  shader (chunk_size*2)(chunk_size*3 - 1)))
+    -- f4 <-  (spawn (process_triangles rasteriser  shader (chunk_size*3)(chunk_total - 1)))
+    (ras1, shade1) <- Par.get f1
+    (ras2, shade2) <- Par.get f2
+    -- (ras3, shade3) <- Par.get f3
+    -- (ras4, shade4) <- Par.get f4
+    case shader of  (CameraShader {..}) ->           (do 
+                                                    let zbuffer = par2_reduce (getZBuffer ras1) (getZBuffer ras2) --(getZBuffer ras3) (getZBuffer ras4)
+                                                    return (ras2 {getZBuffer = zbuffer}, shade2))
+                    (DirectionalLightShader {..}) -> (do 
+                                                    let dbuffer = par2_reduce (getDepthBuffer ras1) (getDepthBuffer ras2) --(getDepthBuffer ras3) (getDepthBuffer ras4)
+                                                    return (ras2 {getDepthBuffer = dbuffer}, shade2) )                        
+    )
 
-
-
-draw_loop :: Rasteriser -> Shader -> Mat44 Double -> IO (Rasteriser, Shader)
-draw_loop rasteriser shader prev_mvp = do
+draw_loop :: Rasteriser -> Shader  -> IO (Rasteriser, Shader)
+draw_loop rasteriser shader  = do
     let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
-
+   
          ----------- SET UP MVP MATRICES IN SHADER -----------
-    shader' <- setup_shader rasteriser shader prev_mvp
 
-    (ras', shade') <- process_triangles rasteriser  shader' 
+    let (ras', shade') = pardraw rasteriser  shader
 
     return (ras', shade')
 
-
-
-process_triangles :: Rasteriser -> Shader -> IO (Rasteriser, Shader)
-process_triangles rasteriser shader = foldM f (rasteriser, shader) (getFace (getModel rasteriser))
+process_triangles :: Rasteriser -> Shader -> Int -> Int -> Par (Rasteriser, Shader)
+process_triangles rasteriser shader start_index end_index =  foldM f (rasteriser, shader) (take ((getNumFaces $ getModel rasteriser) - end_index) (drop start_index $ getFace (getModel rasteriser)))
     where f = \(ras', shader') face -> (process_triangle ras' shader' face)
 
 

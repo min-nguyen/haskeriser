@@ -46,6 +46,11 @@ debug x f =   Trace.trace (show x) f
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                      List/Vector Helpers                       | | ---
       --- ‾------------------------------------------------------------------‾---
+par4_reduce :: Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8)
+par4_reduce as bs cs ds = Vector.zipWith4 (\a b c d -> foldr (\(depth1, color1)(depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) d [a, b, c] ) as bs cs ds
+
+par2_reduce :: Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8)
+par2_reduce as bs  = Vector.zipWith (\a b  -> (\(depth1, color1)(depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) a b ) as bs 
 
 reduce_zbuffer :: [Vector.Vector (Double, Vec.Vec4 Word8)] ->  (Vector.Vector (Double, Vec4 Word8))
 reduce_zbuffer zbuffers =  foldr (\veca vecb -> Vector.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (Vector.zip veca vecb) ) Vector.empty zbuffers

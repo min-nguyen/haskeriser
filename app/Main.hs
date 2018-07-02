@@ -37,7 +37,7 @@ import Text.Printf
 import Control.Exception
 import System.CPUTime
 
-loop :: (Rasteriser -> Shader -> (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> Shader -> IO()
+loop :: (Rasteriser -> Shader -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> Shader -> IO()
 loop draw_func model light camera camera_shader directional_shader ambient_shader = do
         screen <- sdl_init
         start <- getCPUTime
@@ -50,10 +50,13 @@ loop draw_func model light camera camera_shader directional_shader ambient_shade
                         SDL.clear (renderer screen)
                         -- (ras'  , ambient_shader')    <- draw_func ras ambient_shader (Vec.identity :: Mat44 Double)
                         -- Raster with depth shader
-                        (ras'  , directional_shader')  <- draw_func ras  directional_shader (Vec.identity :: Mat44 Double)
-                        -- Raster with camera shader
-                        (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP directional_shader'))
-                        -- Render
+                        directional_shaderx <- setup_shader ras directional_shader (Vec.identity :: Mat44 Double)
+                        camera_shaderx      <- setup_shader ras camera_shader (getMVP directional_shaderx)
+
+                        (ras'  , directional_shader')  <- draw_func ras  directional_shaderx 
+                     
+                        (ras'' , camera_shader') <- draw_func ras' camera_shaderx 
+               
                         sequence [render_screen ras'' camera_shader' px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
               
                         SDL.present (renderer screen) 

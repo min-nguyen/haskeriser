@@ -4,7 +4,10 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
         -- |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾| -- 
         -- |                                                                        | -- 
         -- |                   Data Type & Instance Definitions                     | -- 
@@ -27,12 +30,16 @@ import Data.Binary.Get
 import Data.Word
 import Control.Applicative 
 import Control.Monad (liftM, ap)
+import Control.Monad.Par as Par
 import Control.Monad.State
 import qualified Data.ByteString as B
 import qualified Data.Vector.Storable as ST
 import Codec.Picture
 import Codec.Picture.Types
 import Util
+import Control.DeepSeq
+-- import Control.DeepSeq.Generics (genericRnf)
+import GHC.Generics
 
 data Rasteriser = Rasteriser 
                             {  
@@ -43,7 +50,11 @@ data Rasteriser = Rasteriser
                                 getScreen      :: Screen,
                                 getCamera      :: Camera,
                                 getLight       :: Light
-                            }
+                            } 
+                            -- deriving (NFData, Generic)
+
+instance NFData Rasteriser
+    where rnf x = seq x () 
 
 data Shader =   DirectionalLightShader 
                             {
@@ -73,6 +84,9 @@ data Shader =   DirectionalLightShader
                                 getCurrentUV      :: {-# UNPACK #-} !(Mat23 Double),
                                 getCurrentTri     :: {-# UNPACK #-} !(Mat33 Double)
                             }
+
+instance NFData Shader
+    where rnf x = seq x () 
 
 data Model  =   Model       {    
                                 getFace        :: [Face (Mat33 Double) (Mat32 Double) (Mat33 Double) ],

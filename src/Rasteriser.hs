@@ -30,6 +30,7 @@ import Shader
 import Data.Vec as Vec hiding (map, foldr)
 import qualified Data.Vec as Vec  (map, foldr)
 import Types
+import Control.Monad.Par as Par
 
 load_zbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
 load_zbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 0 0 0 0))) 
@@ -43,7 +44,7 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer ambi
                                               depthbuffer = load_shadowbuffer screen
                                               ambientbuffer = load_shadowbuffer screen
 
-process_triangle :: Rasteriser -> Shader -> Face (Mat33 Double) (Mat32 Double) (Mat33 Double) -> IO (Rasteriser, Shader)
+process_triangle :: Rasteriser -> Shader -> Face (Mat33 Double) (Mat32 Double) (Mat33 Double) -> Par (Rasteriser, Shader)
 process_triangle ras shader face  = do
                         let
                             ----------- VERTEX SHADER -----------
@@ -76,7 +77,7 @@ process_triangle ras shader face  = do
 
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
-draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  IO (Rasteriser, Shader)
+draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  Par (Rasteriser, Shader)
 draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py
     | (py > bbox_max_y)                      = (return ((ras, shader)))
     | (px > bbox_max_x)                      = draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) bbox_min_x (py + 1)
@@ -118,14 +119,14 @@ render_screen ras shader px py = do
             
                 let screen = getScreen ras
                     index = px + py * (width_i (getScreen ras))
+                    pixel = (V2 (screenHeight - fromIntegral py) (screenWidth -  fromIntegral px) )
 
 
-
-                case shader of  (CameraShader {..}) -> let rgba = vec4ToV4 $ snd $ (getZBuffer ras) V.! index in sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba) 
-                                (DirectionalLightShader  {..}) -> let rgba = vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index in sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (rgba) 
+                case shader of  (CameraShader {..}) -> let rgba = vec4ToV4 $ snd $ (getZBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
+                                (DirectionalLightShader  {..}) -> let rgba = vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
                                 (AmbientLightShader  {..}) -> let amb = render_ambient px py (getAmbientBuffer ras)
                                                               in case amb of Nothing -> return ()
-                                                                             Just rgba -> sdl_put_pixel screen (V2 (fromIntegral px) ( fromIntegral py)) (vec4ToV4 rgba) 
+                                                                             Just rgba -> sdl_put_pixel screen pixel (vec4ToV4 rgba) 
 
                 
 
