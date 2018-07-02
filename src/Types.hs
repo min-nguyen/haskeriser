@@ -38,13 +38,14 @@ data Rasteriser = Rasteriser
                             {  
                                 getZBuffer     :: V.Vector (Double, Vec4 Word8),
                                 getDepthBuffer :: V.Vector (Double, Vec4 Word8),
+                                getAmbientBuffer :: V.Vector (Double, Vec4 Word8),
                                 getModel       :: Model,
                                 getScreen      :: Screen,
                                 getCamera      :: Camera,
                                 getLight       :: Light
                             }
 
-data Shader =   DepthShader 
+data Shader =   DirectionalLightShader 
                             {
                                 getModelView   :: {-# UNPACK #-} !(Mat44 Double),
                                 getViewport    :: {-# UNPACK #-} !(Mat44 Double),
@@ -52,7 +53,14 @@ data Shader =   DepthShader
                                 getMVP         :: {-# UNPACK #-} !(Mat44 Double),
                                 getCurrentTri  :: {-# UNPACK #-} !(Mat33 Double)
                             }
-
+                | AmbientLightShader 
+                            {
+                                getModelView   :: {-# UNPACK #-} !(Mat44 Double),
+                                getViewport    :: {-# UNPACK #-} !(Mat44 Double),
+                                getProjection  :: {-# UNPACK #-} !(Mat44 Double),
+                                getMVP         :: {-# UNPACK #-} !(Mat44 Double),
+                                getCurrentTri  :: {-# UNPACK #-} !(Mat33 Double)
+                            }
                 | CameraShader 
                             {
                                 getModelView      :: {-# UNPACK #-} !(Mat44 Double),
@@ -77,10 +85,6 @@ data Model  =   Model       {
 
 data Face       a b c      = Face (a) (b ) (c)
 data Vertices    a          = Vertices a a a
-data UVs         b          = UVs b b b
-data VerticeNormals  c      = VerticeNormals c c c
-data Vertex3       a        = Vertex3 a a a
-data Vertex2       a        = Vertex2 a a
 
 instance Functor Vertices where
     fmap f (Vertices x y z) = Vertices (f x) (f y) (f z)
@@ -88,35 +92,6 @@ instance Functor Vertices where
 instance Applicative Vertices where
     pure a = Vertices a a a 
     Vertices f g h <*> Vertices a b c = Vertices (f a) (g b) (h c)
-
-instance Functor UVs where
-    fmap f (UVs x y z) = UVs (f x) (f y) (f z)
-
-instance Applicative UVs where
-    pure a = UVs a a a 
-    UVs f g h <*> UVs a b c = UVs (f a) (g b) (h c) 
-
-instance Functor VerticeNormals where
-    fmap f (VerticeNormals x y z) = VerticeNormals (f x) (f y) (f z)
-
-instance Applicative VerticeNormals where
-    pure a = VerticeNormals a a a 
-    VerticeNormals f g h <*> VerticeNormals a b c = VerticeNormals (f a) (g b) (h c)
-
-instance Functor Vertex3 where
-    fmap f (Vertex3 x y z) = Vertex3 (f x) (f y) (f z)
-
-instance Applicative Vertex3 where
-    pure a = Vertex3 a a a 
-    Vertex3 f g h <*> Vertex3 a b c = Vertex3 (f a) (g b) (h c)
-
-instance Functor Vertex2 where
-    fmap f (Vertex2 x y ) = Vertex2 (f x) (f y) 
-
-instance Applicative Vertex2 where
-    pure a = Vertex2 a a 
-    Vertex2 f g  <*> Vertex2 a b  = Vertex2 (f a) (g b) 
-
 
 data Light  = Light {
                         direction   :: Vec3 Double
@@ -140,8 +115,6 @@ data Triangle = Triangle {
                             points  :: (Vec4 Double, Vec4 Double, Vec4 Double),
                             color   :: Vec4 Word8 
                          }
-
-
 
 data ColorMap =  ColorMap  {  
                                     imgwidth   :: {-# UNPACK #-} !Int,
@@ -215,10 +188,11 @@ type ScreenCoords = Vec3 (Vec3 Int)
 rCONST_depth  :: Double
 rCONST_depth = 1.0
 
+m_PI  :: Double
+m_PI = 3.1416
+
 screenWidth, screenHeight :: CInt
 (screenWidth, screenHeight) = (200, 200)
-
--- debug (bary_coords, sb_pz, currentBufferValue ) 
 
 screenWidth_i, screenHeight_i :: Int
 (screenWidth_i, screenHeight_i) = (200, 200)
@@ -227,8 +201,3 @@ screenWidth_i, screenHeight_i :: Int
 screenWidth_d, screenHeight_d :: Double
 (screenWidth_d, screenHeight_d) = (200, 200)
 
-vec2ToVertex2 :: Vec2 a -> Vertex2 a
-vec2ToVertex2 (x:.y:.()) = Vertex2 x y
-
-vec3ToVertex3 :: Vec3 a -> Vertex3 a
-vec3ToVertex3 (x:.y:.z:.()) = Vertex3 x y z

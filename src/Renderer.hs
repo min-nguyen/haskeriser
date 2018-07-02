@@ -48,7 +48,7 @@ import Types
 
 draw_loop :: Rasteriser -> Shader -> Mat44 Double -> IO (Rasteriser, Shader)
 draw_loop rasteriser shader prev_mvp = do
-    let (Rasteriser zbuffer shadowbuffer model screen camera light) = rasteriser
+    let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
 
          ----------- SET UP MVP MATRICES IN SHADER -----------
     shader' <- setup_shader rasteriser shader prev_mvp

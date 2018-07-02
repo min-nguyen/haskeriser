@@ -37,8 +37,8 @@ import Text.Printf
 import Control.Exception
 import System.CPUTime
 
-loop :: (Rasteriser -> Shader -> (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> IO()
-loop draw_func model light camera depth_shader camera_shader = do
+loop :: (Rasteriser -> Shader -> (Mat44 Double) -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> Shader -> IO()
+loop draw_func model light camera camera_shader directional_shader ambient_shader = do
         screen <- sdl_init
         start <- getCPUTime
         let ras = (load_rasteriser model screen camera light) :: Rasteriser
@@ -48,11 +48,11 @@ loop draw_func model light camera depth_shader camera_shader = do
 
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
-
+                        -- (ras'  , ambient_shader')    <- draw_func ras ambient_shader (Vec.identity :: Mat44 Double)
                         -- Raster with depth shader
-                        (ras'  , depth_shader')  <- draw_func ras  depth_shader (Vec.identity :: Mat44 Double)
+                        (ras'  , directional_shader')  <- draw_func ras  directional_shader (Vec.identity :: Mat44 Double)
                         -- Raster with camera shader
-                        (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP depth_shader'))
+                        (ras'' , camera_shader') <- draw_func ras' camera_shader ((getMVP directional_shader'))
                         -- Render
                         sequence [render_screen ras'' camera_shader' px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
               
@@ -76,7 +76,8 @@ main = do
     model <- load_model
     camera <- load_camera
     light <- load_light
-    let depth_shader = load_depthshader
+    let directional_shader = load_directionalshader
+        ambient_shader = load_ambientshader
         camera_shader = load_camerashader
-    loop draw_loop model light camera depth_shader camera_shader
+    loop draw_loop model light camera camera_shader directional_shader ambient_shader
     return ()

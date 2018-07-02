@@ -37,7 +37,7 @@ barycentric (a, b, c) p =   let ((ax, ay), (bx, by), (cx, cy), (px, py)) = mapTu
                                 else Nothing)
 
 mvp_matrix :: Shader -> Shader
-mvp_matrix shader = let mvp = (multmm (getViewport shader) (multmm (getProjection shader) (getModelView shader))) in shader { getMVP = mvp }
+mvp_matrix shader = let mvp = (multmm (getViewport shader) (multmm  (getProjection shader)  (getModelView shader))) in shader { getMVP = mvp }
 
 projection_matrix :: Double -> Mat44 Double
 projection_matrix coeff = Vec.set n3 (toVec4D 0.0 0.0 coeff 1.0) identity
@@ -63,8 +63,7 @@ mk_transformation_matrix r t =
 
 
 mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
-mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ((viewport_shader x y w h ) . 
-                                                                          (project_shader coeff) .
+mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ( (viewport_shader x y w h ) . (project_shader coeff) . 
                                                                           (lookat_shader eye' center' up')) shader
                                                             mvpshader' = mvp_matrix mvpshader
                                                         in  mvpshader'
