@@ -73,20 +73,19 @@ load_model = do
 
 
     spec_map_file <- read_tga_specular "resources/african_head_spec.tga"
- 
     diffuse_map_file <- read_tga_color "resources/african_head_diffuse.tga"
     normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
 
     let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) faces''
         model = Model facelist (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
-    print $ pixelAt  (specimg $ getSpecularMap model) 5 5 
+    -- print $ pixelAt  (specimg $ getSpecularMap model) 5 5 
     return model
 
-load_faces :: V.Vector (Vec.Vec3 Double) -> V.Vector (Vec.Vec2 Double) -> V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> [Face (Vec.Mat33 Double) (Vec.Mat32 Double) (Vec.Mat33 Double) ]
+load_faces :: V.Vector (Vec.Vec3 Double) -> V.Vector (Vec.Vec2 Double) -> V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> [Face ]
 load_faces verts uvs vertnorms obj_faces = [ Face (face_verts  verts i) (face_uvs  uvs i) (face_vertnorms  vertnorms i)  | i <- [0 .. (length obj_faces - 1)]]
-    where   face_vertnorms   vertnorms iface =  (toVec3 (model_vertnorms  vertnorms obj_faces iface 0)  (model_vertnorms  vertnorms obj_faces iface 1) (model_vertnorms  vertnorms obj_faces iface 2))
-            face_verts   verts iface =  (toVec3 (model_vert  verts obj_faces iface 0)  (model_vert  verts  obj_faces iface 1) (model_vert  verts obj_faces iface 2))
-            face_uvs    uvs iface =  (toVec3 (model_uv  uvs obj_faces iface 0)  (model_uv  uvs obj_faces iface 1) (model_uv  uvs obj_faces iface 2))
+    where   face_vertnorms   vertnorms iface =  (toVec3 (model_vertnorms  vertnorms obj_faces iface 0)  (model_vertnorms  vertnorms obj_faces iface 1) (model_vertnorms  vertnorms obj_faces iface 2)) :: Vec.Mat33 Double
+            face_verts   verts iface =  (toVec3 (model_vert  verts obj_faces iface 0)  (model_vert  verts  obj_faces iface 1) (model_vert  verts obj_faces iface 2)) :: Vec.Mat33 Double
+            face_uvs    uvs iface =  (Vec.transpose $ toVec3 (model_uv  uvs obj_faces iface 0)  (model_uv  uvs obj_faces iface 1) (model_uv  uvs obj_faces iface 2)) :: Vec.Mat23 Double
 
 model_vert :: V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> Int -> Int -> Vec.Vec3 Double
 model_vert verts obj_faces iface nvert  =  ( (verts V.! (fromIntegral ( (Vec.getElem 0 (fst ((obj_faces V.! iface) !! nvert))) )  )  ))
@@ -114,9 +113,9 @@ model_normal model uv = let (u, v)              =   fromVec2 uv
                             (u', v')            =  (floor (u * (fromIntegral (normwidth $ getNormalMap model)))  ,  floor ( fromIntegral (normheight $ getNormalMap model) - v * (fromIntegral (normheight $ getNormalMap model)) ))
                             image               =   (normimg (getNormalMap model))
                             PixelRGBA8 r g b a  = pixelAt image u' v'
-                            color = mapVec4 (fromIntegral) (toVec4 r g b a)
+                            color = Vec.map (fromIntegral) (toVec4 r g b a)
                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 ) (((getElemV4 1 color)/255.0) * 2.0 ) (((getElemV4 0 color)/255.0) * 2.0 )
-                        in  debug rgb rgb
+                        in  rgb
 
 
 model_specular :: Model -> Vec.Vec2 Double -> Double                        

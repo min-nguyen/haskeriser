@@ -43,15 +43,15 @@ import GHC.Generics
 
 data Rasteriser = Rasteriser 
                             {  
-                                getZBuffer     :: V.Vector (Double, Vec4 Word8),
-                                getDepthBuffer :: V.Vector (Double, Vec4 Word8),
-                                getAmbientBuffer :: V.Vector (Double, Vec4 Word8),
-                                getModel       :: Model,
-                                getScreen      :: Screen,
-                                getCamera      :: Camera,
-                                getLight       :: Light
+                                getZBuffer     ::  {-# UNPACK #-} !(V.Vector (Double, Vec4 Word8)),
+                                getDepthBuffer ::  {-# UNPACK #-} !(V.Vector (Double, Vec4 Word8)),
+                                getAmbientBuffer ::  {-# UNPACK #-} !(V.Vector (Double, Vec4 Word8)),
+                                getModel       ::  {-# UNPACK #-} !Model,
+                                getScreen      ::  {-# UNPACK #-} !Screen,
+                                getCamera      ::  {-# UNPACK #-} !Camera,
+                                getLight       ::  {-# UNPACK #-} !Light
                             } 
-                            -- deriving (NFData, Generic)
+                         
 
 instance NFData Rasteriser
     where rnf x = seq x () 
@@ -62,6 +62,7 @@ data Shader =   DirectionalLightShader
                                 getViewport    :: {-# UNPACK #-} !(Mat44 Double),
                                 getProjection  :: {-# UNPACK #-} !(Mat44 Double),
                                 getMVP         :: {-# UNPACK #-} !(Mat44 Double),
+                                getTransformM  :: {-# UNPACK #-} !(Mat44 Double),
                                 getCurrentTri  :: {-# UNPACK #-} !(Mat33 Double)
                             }
                 | AmbientLightShader 
@@ -89,16 +90,20 @@ instance NFData Shader
     where rnf x = seq x () 
 
 data Model  =   Model       {    
-                                getFace        :: [Face (Mat33 Double) (Mat32 Double) (Mat33 Double) ],
-                                getNumFaces :: Int,
-                                getNumVerts :: Int,
-                                getDiffuseMap :: ColorMap,
-                                getNormalMap :: NormalMap,
-                                getSpecularMap :: SpecularMap
+                                getFace         :: [Face],
+                                getNumFaces     ::  {-# UNPACK #-} !Int,
+                                getNumVerts     ::  {-# UNPACK #-} !Int,
+                                getDiffuseMap   :: ColorMap,
+                                getNormalMap    :: NormalMap,
+                                getSpecularMap  :: SpecularMap
                             }
 
-data Face       a b c      = Face (a) (b ) (c)
-data Vertices    a          = Vertices a a a
+data Face               = Face {
+                                vertices ::  {-# UNPACK #-} !(Mat33 Double),
+                                uvs      ::  {-# UNPACK #-} !(Mat23 Double),
+                                vertnorms :: {-# UNPACK #-} !(Mat33 Double)
+                             }
+data Vertices    a         = Vertices a a a
 
 instance Functor Vertices where
     fmap f (Vertices x y z) = Vertices (f x) (f y) (f z)
@@ -108,7 +113,8 @@ instance Applicative Vertices where
     Vertices f g h <*> Vertices a b c = Vertices (f a) (g b) (h c)
 
 data Light  = Light {
-                        direction   :: Vec3 Double
+                        direction   :: Vec3 Double,
+                        intensity   :: Double
                     }
 
 data Camera = Camera {  
@@ -130,19 +136,19 @@ data Triangle = Triangle {
                             color   :: Vec4 Word8 
                          }
 
-data ColorMap =  ColorMap  {  
-                                    imgwidth   :: {-# UNPACK #-} !Int,
-                                    imgheight  :: {-# UNPACK #-} !Int,
-                                    imgdata    :: ST.Vector (PixelBaseComponent PixelRGB8),
-                                    imgbbp     :: Int,
-                                    img        :: Image PixelRGB8
-                                }
-				 | ColorMapError
+data ColorMap = ColorMap  {  
+                        imgwidth   :: {-# UNPACK #-} !Int,
+                        imgheight  :: {-# UNPACK #-} !Int,
+                        imgdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent PixelRGB8)),
+                        imgbbp     :: Int,
+                        img        :: Image PixelRGB8
+                }
+                | ColorMapError
 
 data NormalMap = NormalMap {
                                 normwidth   :: {-# UNPACK #-} !Int,
                                 normheight  :: {-# UNPACK #-} !Int,
-                                normdata    :: ST.Vector (PixelBaseComponent PixelRGBA8) ,
+                                normdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent PixelRGBA8)) ,
                                 normbbp     :: Int,
                                 normimg     :: Image PixelRGBA8
                             }
@@ -152,7 +158,7 @@ data NormalMap = NormalMap {
 data SpecularMap = SpecularMap {
                                 specwidth   :: {-# UNPACK #-} !Int,
                                 specheight  :: {-# UNPACK #-} !Int,
-                                specdata    :: ST.Vector (PixelBaseComponent Pixel8) ,
+                                specdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent Pixel8)) ,
                                 specbbp     :: Int,
                                 specimg     :: Image Pixel8
                             }
@@ -188,14 +194,11 @@ instance Applicative (Kernel s) where
     pure = return
     (<*>) = ap
 
-
-
-
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                        Type Aliases                            | | ---
       --- ‾------------------------------------------------------------------‾---
 
-type ZBuffer = V.Vector (Double, Vec4 Word8)
+type Buffer = V.Vector (Double, Vec4 Word8)
 
 type ScreenCoords = Vec3 (Vec3 Int) 
 

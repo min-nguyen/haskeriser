@@ -44,7 +44,7 @@ load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer ambi
                                               depthbuffer = load_shadowbuffer screen
                                               ambientbuffer = load_shadowbuffer screen
 
-process_triangle :: Rasteriser -> Shader -> Face (Mat33 Double) (Mat32 Double) (Mat33 Double) -> Par (Rasteriser, Shader)
+process_triangle :: Rasteriser -> Shader -> Face  -> Par (Rasteriser, Shader)
 process_triangle ras shader face  = do
                         let
                             ----------- VERTEX SHADER -----------
@@ -85,18 +85,18 @@ draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, b
                 let
                     -- Screen Coordinates
                     (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
-                    ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4D (vertex_0, vertex_1, vertex_2)
+                    ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4 (vertex_0, vertex_1, vertex_2)
                 
                     -- Coordinate Attributes
-                    barycentric_inputs = (projectVec4to2D (mult_v4_num vertex_0 (1.0/w0) ) , projectVec4to2D (mult_v4_num vertex_1  (1.0/w1) ), projectVec4to2D (mult_v4_num vertex_2 (1.0/w2))) 
-                    pixel = (toVec2D (to_double px) (to_double py) )
-                    maybeBary = barycentric barycentric_inputs (toVec2D (to_double px) (to_double py) )
+                    barycentric_inputs = (projectVec4to2D vertex_0 , projectVec4to2D vertex_1 , projectVec4to2D vertex_2) 
+                    pixel = (toVec2 (to_double px) (to_double py) )
+                    maybeBary = barycentric barycentric_inputs (toVec2 (to_double px) (to_double py) )
 
 
                 case maybeBary of   Nothing   -> ((draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
                                     Just bary -> (    do
                                                 
-                                                let (_, _, frag_depth) = (fromVec3D $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
+                                                let (_, _, frag_depth) = (fromVec3 $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
                                                     pixelIndex = (px + py * screenWidth_i)
                                                     getBuffer = case shader of  (CameraShader {..}) -> (\ras -> getZBuffer ras)
                                                                                 (AmbientLightShader {..}) -> (\ras -> getAmbientBuffer ras)
@@ -114,19 +114,20 @@ draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, b
                                                           
       
 
-render_screen :: Rasteriser -> Shader -> Int -> Int -> IO ()
-render_screen ras shader px py = do
+render_screen :: Rasteriser -> Shader -> Shader -> Int -> Int -> IO ()
+render_screen ras depthshader camerashader px py = do
             
                 let screen = getScreen ras
                     index = px + py * (width_i (getScreen ras))
                     pixel = (V2 (screenHeight - fromIntegral py) (screenWidth -  fromIntegral px) )
-
-
-                case shader of  (CameraShader {..}) -> let rgba = vec4ToV4 $ snd $ (getZBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
-                                (DirectionalLightShader  {..}) -> let rgba = vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
-                                (AmbientLightShader  {..}) -> let amb = render_ambient px py (getAmbientBuffer ras)
-                                                              in case amb of Nothing -> return ()
-                                                                             Just rgba -> sdl_put_pixel screen pixel (vec4ToV4 rgba) 
+                    camrgba = snd $ (getZBuffer ras) V.! index 
+                    depthrgba = snd $ (getDepthBuffer ras) V.! index
+                sdl_put_pixel screen pixel $ vec4ToV4 $  camrgba 
+                -- case shader of  (CameraShader {..}) -> let rgba = vec4ToV4 $ snd $ (getZBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
+                --                 (DirectionalLightShader  {..}) -> let rgba = vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
+                --                 (AmbientLightShader  {..}) -> let amb = render_ambient px py (getAmbientBuffer ras)
+                --                                               in case amb of Nothing -> return ()
+                --                                                              Just rgba -> sdl_put_pixel screen pixel (vec4ToV4 rgba) 
 
                 
 
@@ -134,7 +135,7 @@ render_screen ras shader px py = do
 render_ambient :: Int -> Int -> V.Vector (Double, Vec4 Word8) -> Maybe (Vec4 Word8)
 render_ambient x y zbuffer = 
                      if (fst (zbuffer V.! (x + y * screenWidth_i))) > (0.0)
-                     then ( let total = foldr (\tote a -> tote + ( (m_PI/2) - (max_elevation_angle zbuffer (mapVec2 to_double $ toVec2 x y) (toVec2 (cos a) (sin a)) ) ) ) 0 [0, (m_PI/4) .. m_PI * 2 ]  
+                     then ( let total = foldr (\tote a -> tote + ( (m_PI/2) - (max_elevation_angle zbuffer (Vec.map to_double $ toVec2 x y) (toVec2 (cos a) (sin a)) ) ) ) 0 [0, (m_PI/4) .. m_PI * 2 ]  
                                 total' = total/(m_PI*4)
                                 total'' = debug total' ((**) total' 100)
                             in Just $ mult_rgba_d (toVec4 255 255 255 255) total'')     

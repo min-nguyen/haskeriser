@@ -31,4 +31,4 @@ import Types
 import Util
 
 load_light :: IO Light
-load_light = return $ Light (Vec.normalize $ toVec3D (-0.5) 1.0 (0.5)) 
+load_light = return $ Light (Vec.normalize $ toVec3 (-0.5) 1.0 (0.5)) 0.2
