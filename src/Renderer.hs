@@ -49,8 +49,8 @@ pardraw :: Rasteriser -> Shader ->  (Rasteriser, Shader)
 pardraw rasteriser shader  =  runPar ( do
     let chunk_total = getNumFaces $ getModel rasteriser
         chunk_size = floor ((to_double chunk_total)/2.0)
-    f1 <-  (spawn (process_triangles rasteriser  shader 0 (chunk_size*1 - 1)))
-    f2 <-  (spawn (process_triangles rasteriser  shader (chunk_size*1)(chunk_size - 1)))
+    f1 <-  (spawn (process_triangles rasteriser  shader 0 chunk_size))
+    f2 <-  (spawn (process_triangles rasteriser  shader (chunk_size*1) chunk_size))
     -- f3 <-  (spawn (process_triangles rasteriser  shader (chunk_size*2)(chunk_size*3 - 1)))
     -- f4 <-  (spawn (process_triangles rasteriser  shader (chunk_size*3)(chunk_total - 1)))
     (ras1, shade1) <- Par.get f1
@@ -86,7 +86,7 @@ draw_loop rasteriser shader  = do
     return (ras', shade')
 
 process_triangles :: Rasteriser -> Shader -> Int -> Int -> Par (Rasteriser, Shader)
-process_triangles rasteriser shader start_index end_index =  foldM f (rasteriser, shader) (take ((getNumFaces $ getModel rasteriser) - end_index) (drop start_index $ getFace (getModel rasteriser)))
+process_triangles rasteriser shader start_index chunksize =  foldM f (rasteriser, shader) (take chunksize (drop start_index $ getFace (getModel rasteriser)))
     where f = \(ras', shader') face -> (process_triangle ras' shader' face)
 
 
