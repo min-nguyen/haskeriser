@@ -80,7 +80,8 @@ fragment_shade shader ras bary_coords index = case shader of
        (do
             let 
                 (px, py, pz) = (fromVec3 $ multmv current_tri bary_coords)  :: (Double, Double, Double)
-                color = mult_rgba_d (toVec4 255 255 255 255)  pz
+            
+                color = debug pz (mult_rgba_d (toVec4 255 255 255 255)  pz)
                 updatedbuffer = replaceAt  (pz, color) index (getDepthBuffer ras)
                 updatedras = ras {getDepthBuffer = updatedbuffer}
 
@@ -88,29 +89,30 @@ fragment_shade shader ras bary_coords index = case shader of
 
             return $ (updatedras , shader) )
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
-       (do
-            let (px, py, pz)                    = (fromVec3 $ multmv vary_tri bary_coords) :: (Double, Double, Double)
-                (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords)))
+       (do  
+            let (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords)))
                 shadow_idx                      = ((floor sb_px) + (floor sb_py) * screenWidth_i)
+            if shadow_idx > (screenWidth_i * screenHeight_i) 
+                then return (ras, shader) 
+                else   (do 
+                    let currentBufferValue              = (fst((getDepthBuffer ras) V.! shadow_idx))
+                    
+                        inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * (intensity $ getLight ras)
 
-                currentBufferValue              = fst((getDepthBuffer ras) V.! shadow_idx)
-               
-                inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * (intensity $ getLight ras)
+                        uv          = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
 
-                uv          = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
+                        norm        = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
+                        light       = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
+                        spec        = (max ((dot norm light) * 4.0) (0.0)) * ((Vec.norm (model_specular (getModel ras) uv)) * 2.0 * (intensity $ getLight ras))
+                        
+                        diffuse     = ((model_diffuse (getModel ras) uv) :: Vec4 Word8)
 
-                norm        = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
-                light       = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
-                spec        =  (max ((dot norm light) * 2.0) (0.0)) * (Vec.norm ((model_specular (getModel ras) uv)*2.0))
-                
-                diffuse     = ((model_diffuse (getModel ras) uv) :: Vec4 Word8)
+                        color       = (add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 3.0 ) ) (5))
+                        pz          = (Vec.getElem 2 $ multmv vary_tri bary_coords) :: Double
+                        updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
+                        updatedras = ras {getZBuffer = updatedbuffer}
 
-                color       =  (add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 1.2 ) ) (20))
-            
-            let updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
-                updatedras = ras {getZBuffer = updatedbuffer}
-
-            return $ (updatedras , shader) )             
+                    return $ (updatedras , shader) ) )            
     (AmbientLightShader { getCurrentTri = current_tri, ..}) -> 
        (do
             let 
@@ -162,7 +164,7 @@ setup_shader rasteriser shader transMVP = case shader of
             depth_coeff     = 0.0
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shader' = mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4)) (screen_height *(3.0/4))  light_dir center up 0.0
+            shader' = mvp_shader shader depth_coeff  (0) (0) (screen_width) (screen_height )  light_dir center up 0.0
             inv_MVP = invert (transMVP)
             transformM = case inv_MVP of Just invMVP     -> ((multmm (getMVP shader') invMVP) :: Mat44 Double)
                                          Nothing         -> (Vec.identity :: Mat44 Double)
@@ -188,13 +190,13 @@ setup_shader rasteriser shader transMVP = case shader of
             light_dir       = direction light
         
             cam_pos         = position camera
-        print ((-1.0)/(Vec.norm( (cam_pos) - center)))
+
         let cam_dir         = rotation camera
             cam_rotation    = (Vec.identity :: Mat44 Double) --rotation camera
-            depth_coeff     = if Vec.norm(cam_pos - center) <= (-1.0) then (0.0) else ((-1.0)/(Vec.norm( (cam_pos) - center)))
+            depth_coeff     = if Vec.norm(cam_pos - center) <= (-1.0) then (-1.0) else ((-1.0)/(Vec.norm( (cam_pos) - center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shade' = mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4)) (screen_height *(3.0/4)) cam_pos cam_dir up cam_rotation
+            shade' = mvp_shader shader (depth_coeff) (0) (0) (screen_width) (screen_height ) cam_pos cam_dir up cam_rotation
 
             uniform_M = (getModelView shade')
             

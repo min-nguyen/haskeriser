@@ -210,12 +210,12 @@ m_PI  :: Double
 m_PI = 3.1416
 
 screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (800, 800)
+(screenWidth, screenHeight) = (200, 200)
 
 screenWidth_i, screenHeight_i :: Int
-(screenWidth_i, screenHeight_i) = (800, 800)
+(screenWidth_i, screenHeight_i) = (200, 200)
 
 
 screenWidth_d, screenHeight_d :: Double
-(screenWidth_d, screenHeight_d) = (800, 800)
+(screenWidth_d, screenHeight_d) = (200, 200)
 

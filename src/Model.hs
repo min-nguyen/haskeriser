@@ -105,7 +105,7 @@ model_diffuse model uv = let    (u, v) = fromVec2 uv
                                 dm =  (getDiffuseMap model)
                                 image = img dm
                                 PixelRGB8 r g b = pixelAt image u' v'
-                         in  (toVec4 r g b 255)
+                         in  (toVec4 r g b 125)
 
 model_normal :: Model -> Vec.Vec2 Double -> Vec.Vec3 Double                         
 model_normal model uv = let (u, v)              =   fromVec2 uv

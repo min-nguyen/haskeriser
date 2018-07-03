@@ -58,11 +58,11 @@ process_triangle ras shader face  = do
                             fetchy i = getElem 1 (getElem i screenVertices )
                             fetchw i = getElem 3 (getElem i screenVertices )
 
-                            bboxmin = foldr (\(x, y) (x', y') -> ((min x x'),(min y y')) )  
+                            bboxmin = foldr (\(x, y) (x', y') -> (max (0.0) (min x x'), max (0.0) (min y y')) )  
                                             (1000000.0, 1000000.0)
                                             [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i)  ) |  i <- [0,1,2] ]
 
-                            bboxmax = foldr (\(x, y) (x', y') -> ((max x x'),(max y y')) )  
+                            bboxmax = foldr (\(x, y) (x', y') -> ( min (screenWidth_d - 1)  (max x x'), min (screenHeight_d - 1) (max y y')) )  
                                             ((-1000000.0), (-1000000.0))   
                                             [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i) ) |  i <- [0,1,2] ]
                         
@@ -95,21 +95,21 @@ draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, b
 
                 case maybeBary of   Nothing   -> ((draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
                                     Just bary -> (    do
-                                                
-                                                let (_, _, frag_depth) = (fromVec3 $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
-                                                    pixelIndex = (px + py * screenWidth_i)
-                                                    getBuffer = case shader of  (CameraShader {..}) -> (\ras -> getZBuffer ras)
-                                                                                (AmbientLightShader {..}) -> (\ras -> getAmbientBuffer ras)
-                                                                                (DirectionalLightShader  {..}) -> (\ras -> getDepthBuffer ras)
-
-                                                if ( (fst ((getBuffer ras) V.! pixelIndex )) > frag_depth )
-                                                then  (  (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
-                                                else ( do
-                                          
-                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
-
+                                                    let (_, _, frag_depth) = (fromVec3 $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
+                                                        pixelIndex = (px + py * screenWidth_i)
                                                     
-                                                    draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
+                                                        getBuffer = case shader of  (CameraShader {..}) -> (\ras -> getZBuffer ras)
+                                                                                    (AmbientLightShader {..}) -> (\ras -> getAmbientBuffer ras)
+                                                                                    (DirectionalLightShader  {..}) -> (\ras -> getDepthBuffer ras)
+
+                                                    if ( (fst ((getBuffer ras) V.! pixelIndex )) > frag_depth )
+                                                    then  (  (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
+                                                    else ( do
+                                            
+                                                        (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
+
+                                                
+                                                        draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
                                             
                                                           
       
