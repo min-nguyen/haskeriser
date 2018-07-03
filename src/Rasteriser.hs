@@ -119,7 +119,7 @@ render_screen ras depthshader camerashader px py = do
             
                 let screen = getScreen ras
                     index = px + py * (width_i (getScreen ras))
-                    pixel = (V2 (screenHeight - fromIntegral py) (screenWidth -  fromIntegral px) )
+                    pixel = (V2  (screenWidth -  fromIntegral px) (screenHeight - fromIntegral py) )
                     camrgba = snd $ (getZBuffer ras) V.! index 
                     depthrgba = snd $ (getDepthBuffer ras) V.! index
                 sdl_put_pixel screen pixel $ vec4ToV4 $  camrgba 

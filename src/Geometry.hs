@@ -45,14 +45,14 @@ projection_matrix coeff = Vec.set n3 (toVec4 0.0 0.0 coeff 1.0) identity
 
 viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
 viewport_matrix x y w h =    matFromLists [[w/2.0,   0,         0,                 x+w/2.0],
-                                                            [0,       h/2.0,     0,                 y+h/2.0],
-                                                            [0,       0,         rCONST_depth/2.0,  rCONST_depth/2.0],
-                                                            [0,       0,         0,                 1.0]]
+                                            [0,       h/2.0,     0,                 y+h/2.0],
+                                            [0,       0,         rCONST_depth/2.0,  rCONST_depth/2.0],
+                                            [0,       0,         0,                 1.0]]
 
 
 --                 EYE          CENTER        UP                                     
-lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double
-lookat_matrix = rotationLookAt
+lookat_matrix :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double -> Mat44 Double
+lookat_matrix e c u rotation = (rotationLookAt u c e) --(((multmm :: Mat44 Double -> Mat44 Double -> Mat44 Double) rotation  ) )
 
 mk_transformation_matrix :: Num a => Mat33 a -> Vec3 a -> Mat44 a
 mk_transformation_matrix r t = 
@@ -62,11 +62,11 @@ mk_transformation_matrix r t =
           (r1, r2, r3) = fromVec3 r
 
 
-mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader
-mvp_shader shader coeff x y w h eye' center' up'  =     let mvpshader =  ( (viewport_shader x y w h ) . (project_shader coeff) . 
-                                                                          (lookat_shader eye' center' up')) shader
-                                                            mvpshader' = mvp_matrix mvpshader
-                                                        in  mvpshader'
+mvp_shader :: Shader -> Double -> Double -> Double -> Double -> Double -> Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double -> Shader
+mvp_shader shader coeff x y w h eye' center' up' ang =     let  mvpshader =  ( (viewport_shader x y w h ) . (project_shader coeff) . 
+                                                                               (lookat_shader eye' center' up' ang)) shader
+                                                                mvpshader' = mvp_matrix mvpshader
+                                                            in  mvpshader'
 
 project_shader :: Double -> Shader -> Shader
 project_shader  coeff  shader = shader {getProjection = projection_matrix coeff}
@@ -74,11 +74,11 @@ project_shader  coeff  shader = shader {getProjection = projection_matrix coeff}
 viewport_shader :: Double -> Double -> Double -> Double ->  Shader -> Shader
 viewport_shader  x y w h shader = shader {getViewport = viewport_matrix x y w h}
 
-lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Shader -> Shader
-lookat_shader  eyev centerv upv shader = shader {getModelView = lookat_matrix eyev centerv upv }
+lookat_shader :: Vec3 Double -> Vec3 Double -> Vec3 Double -> Mat44 Double -> Shader -> Shader
+lookat_shader  eyev centerv upv ang shader = shader {getModelView = lookat_matrix eyev centerv upv ang }
 
 center :: Vec3 Double
-center = toVec3 0.0 0.0 0.0
+center = toVec3 0.0 0.0 (-1.0)
 
 eye :: Vec3 Double
 eye = toVec3 1.0 1.0 4.0

@@ -69,9 +69,6 @@ load_model = do
         nats = 1 : map (+1) (nats)
 
         indexed_faces = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(Vec.Vec3 Integer, Int)])
-        indexed_verts = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
-        indexed_norms = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
-        indexed_uvs =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
 
 
     spec_map_file <- read_tga_specular ("resources/" ++ (arg_0) ++ "_spec.tga")
@@ -79,7 +76,7 @@ load_model = do
     normal_map_file  <- read_tga_normal ("resources/" ++ (arg_0) ++ "_nm.tga")
 
     let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) indexed_faces
-        model = Model facelist (length indexed_faces) (length indexed_verts) diffuse_map_file normal_map_file spec_map_file
+        model = Model facelist (length indexed_faces) (length verts) diffuse_map_file normal_map_file spec_map_file
     
     return model
 

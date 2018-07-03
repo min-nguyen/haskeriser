@@ -36,11 +36,15 @@ vertex_shade (DirectionalLightShader modelview viewport projection mvp_mat trans
     let 
         Face (vertices) (uvs) (vertnorms) = face
         model = getModel ras
-   
+        -- (cam_x, cam_y, cam_z) = position $ getCamera ras
         screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) )  
 
         new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
-
+        
+        -- translated_v = screen_vert - (toVec3 (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1))
+        -- rotated_x = (x - screenWidth_d/ 2) / rCONSTDepth * (z - cam_z) + cam_x
+        -- rotated_y =  (y - screenHeight_d/ 2) / rCONSTDepth * (z - cam_z) + cam_y
+        -- rotated_z = z
     in ((screen_vert, (DirectionalLightShader modelview viewport projection mvp_mat transformM new_varying_tri) ))
     
 vertex_shade (AmbientLightShader modelview viewport projection mvp_mat varying_tri ) ras face = 
@@ -153,11 +157,12 @@ setup_shader rasteriser shader transMVP = case shader of
 
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
+            cam_pos         = position camera
             light_dir       = direction light
             depth_coeff     = 0.0
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shader' = mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) light_dir center up
+            shader' = mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4)) (screen_height *(3.0/4))  light_dir center up 0.0
             inv_MVP = invert (transMVP)
             transformM = case inv_MVP of Just invMVP     -> ((multmm (getMVP shader') invMVP) :: Mat44 Double)
                                          Nothing         -> (Vec.identity :: Mat44 Double)
@@ -168,10 +173,11 @@ setup_shader rasteriser shader transMVP = case shader of
        
        
         let screen_width    = to_double $ width_i screen
+            cam_pos         = position camera
             screen_height   = to_double $ height_i screen
             light_dir       = direction light
-            depth_coeff     = ((-1.0)/(Vec.norm( eye- center)))
-        return $ mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) eye center up)
+            depth_coeff     = ((-1.0)/(Vec.norm( eye- cam_pos)))
+        return $ mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0)(screen_width * (3.0/4)) (screen_height *(3.0/4))  eye cam_pos up 0.0)
         
         
     CameraShader _ _ _ _ _ _ _ _ _ -> (do
@@ -182,10 +188,13 @@ setup_shader rasteriser shader transMVP = case shader of
             light_dir       = direction light
         
             cam_pos         = position camera
-            depth_coeff     = ((-1.0)/(Vec.norm( (cam_pos) - center)))
+        print ((-1.0)/(Vec.norm( (cam_pos) - center)))
+        let cam_dir         = rotation camera
+            cam_rotation    = (Vec.identity :: Mat44 Double) --rotation camera
+            depth_coeff     = if Vec.norm(cam_pos - center) <= (-1.0) then (0.0) else ((-1.0)/(Vec.norm( (cam_pos) - center)))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
-            shade' = mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4.0)) (screen_height * (3.0/4.0)) cam_pos center up
+            shade' = mvp_shader shader (depth_coeff) (screen_width/8.0) (screen_height/8.0) (screen_width * (3.0/4)) (screen_height *(3.0/4)) cam_pos cam_dir up cam_rotation
 
             uniform_M = (getModelView shade')
             

@@ -118,7 +118,8 @@ data Light  = Light {
                     }
 
 data Camera = Camera {  
-                        position :: Vec3 Double 
+                        position :: Vec3 Double,
+                        rotation :: Vec3 Double
                      }
 
 data Screen = Screen  { 
@@ -203,18 +204,18 @@ type Buffer = V.Vector (Double, Vec4 Word8)
 type ScreenCoords = Vec3 (Vec3 Int) 
 
 rCONST_depth  :: Double
-rCONST_depth = 1.0
+rCONST_depth = 255.0
 
 m_PI  :: Double
 m_PI = 3.1416
 
 screenWidth, screenHeight :: CInt
-(screenWidth, screenHeight) = (200, 200)
+(screenWidth, screenHeight) = (800, 800)
 
 screenWidth_i, screenHeight_i :: Int
-(screenWidth_i, screenHeight_i) = (200, 200)
+(screenWidth_i, screenHeight_i) = (800, 800)
 
 
 screenWidth_d, screenHeight_d :: Double
-(screenWidth_d, screenHeight_d) = (200, 200)
+(screenWidth_d, screenHeight_d) = (800, 800)
 

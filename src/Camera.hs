@@ -29,5 +29,8 @@ import Util
 
 load_camera :: IO Camera
 load_camera = do
-    return $ Camera (toVec3  (1.0) (-1.0) (2.0))
+    return $ Camera (toVec3  (1.0) (1.0) (-90.0)) (toVec3  (0.0) (-1.0) (180.0)) -- (rotateTowards 180 0 0)
                         -- order == y z x ??
+
+rotateTowards ::  Double ->  Double -> Double -> Mat44 Double
+rotateTowards axisx axisy axisz = multmm (Vec.rotationZ (axisz/180)) (multmm (Vec.rotationY (axisy/180)) (Vec.rotationX (axisx/180)))
