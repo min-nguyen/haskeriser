@@ -73,11 +73,13 @@ load_model = do
 
 
     spec_map_file <- read_tga_specular "resources/african_head_spec.tga"
+ 
     diffuse_map_file <- read_tga_color "resources/african_head_diffuse.tga"
     normal_map_file  <- read_tga_normal "resources/african_head_nm.tga"
 
     let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) faces''
         model = Model facelist (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
+    print $ pixelAt  (specimg $ getSpecularMap model) 5 5 
     return model
 
 load_faces :: V.Vector (Vec.Vec3 Double) -> V.Vector (Vec.Vec2 Double) -> V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> [Face (Vec.Mat33 Double) (Vec.Mat32 Double) (Vec.Mat33 Double) ]
@@ -114,15 +116,15 @@ model_normal model uv = let (u, v)              =   fromVec2 uv
                             PixelRGBA8 r g b a  = pixelAt image u' v'
                             color = mapVec4 (fromIntegral) (toVec4 r g b a)
                             rgb = toVec3 (((getElemV4 2 color)/255.0) * 2.0 ) (((getElemV4 1 color)/255.0) * 2.0 ) (((getElemV4 0 color)/255.0) * 2.0 )
-                        in  rgb
+                        in  debug rgb rgb
 
 
 model_specular :: Model -> Vec.Vec2 Double -> Double                        
 model_specular model uv =   let (u, v)              =   fromVec2 uv
                                 (u', v')            =  (floor (u * (fromIntegral (specwidth $ getSpecularMap model)))  ,  floor ( fromIntegral (specheight $ getSpecularMap model) - v * (fromIntegral (specheight $ getSpecularMap model)) ))
-                                image               =   (specimg (getSpecularMap model))
+                                image               =     (specimg (getSpecularMap model))
                                 ee  =  (pixelAt image u' v')
-                            in  (fromIntegral ee)
+                            in    (to_double $ fromIntegral ee)
 
 
 

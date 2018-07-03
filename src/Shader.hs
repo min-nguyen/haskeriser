@@ -105,13 +105,12 @@ fragment_shade shader ras bary_coords index = case shader of
 
                 norm    = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
                 light   = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
-                r       = (Vec.normalize $ (mult_v3_num norm ((dot norm light) * 2.0)) - light ) :: Vec3 Double
-                spec    =  (**) (max (getElemV3 2 r) (0.0))  (model_specular (getModel ras) uv)
-                diff    = (max 0.0 ((dot norm light) :: Double) ) :: Double
+                r       = ( ( (dot norm light) * 2.0)  ) 
+                spec    =  (**) (max (r) (0.0))  ((model_specular (getModel ras) uv)*2.0)
 
-                rgba = (model_diffuse (getModel ras) uv) :: Vec4 Word8
+                rgba = ((model_diffuse (getModel ras) uv) :: Vec4 Word8)
 
-                color =  (add_rgba_d (mult_rgba_d (rgba)   ( isVisible * ( 1.1 * diff * 0.6 * spec ) :: Double)) (10))
+                color =  (add_rgba_d (mult_rgba_d (rgba) (( isVisible *  1.1  + spec * 1.2 ) :: Double)) (20))
 
             let updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
                 updatedras = ras {getZBuffer = updatedbuffer}
