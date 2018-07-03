@@ -39,7 +39,7 @@ clamp :: Double -> Double -> Double -> Double
 clamp x minval maxval = min (max x minval) maxval
 
 to_double :: Int -> Double
-{-# INLINE clamp #-}
+{-# INLINE to_double #-}
 to_double x = fromIntegral x
 
 debug :: (Show a) => a -> b -> b
@@ -49,6 +49,7 @@ debug x f =   Trace.trace (show x) f
      --- | |                      List/Vector Helpers                       | | ---
       --- ‾------------------------------------------------------------------‾---
 par2_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) 
+{-# INLINE par2_reduce #-}
 par2_reduce as bs  = (\a b  -> (\(depth1, color1) (depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) a b ) as bs
 
 par2 :: (a -> b -> c) -> (a -> b -> c)

@@ -68,21 +68,19 @@ load_model = do
 
         nats = 1 : map (+1) (nats)
 
-        faces'' = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(Vec.Vec3 Integer, Int)])
-        verts'' = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
-        norms'' = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
-        uvs'' =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
+        indexed_faces = (V.fromList (zipWith (\f i -> zipWith (\f' i' -> (f', (head i)+i')) f (nats)) faces3 (map (\x -> [x]) ((nats :: [Int])) :: [[Int]]))) :: V.Vector ([(Vec.Vec3 Integer, Int)])
+        indexed_verts = (V.fromList (zipWith (\f i -> (f, i)) verts (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
+        indexed_norms = (V.fromList (zipWith (\f i -> (f, i)) norms (nats :: [Int]))) :: V.Vector (Vec.Vec3 Double, Int)
+        indexed_uvs =   (V.fromList (zipWith (\f i -> (f, i)) uvs (nats :: [Int]))) :: V.Vector (Vec.Vec2 Double, Int)
 
-    print_tga_type  ("resources/" ++ (arg_0) ++ "_spec.tga")
-    print_tga_type ("resources/" ++ (arg_0) ++ "_diffuse.tga")
-    print_tga_type ("resources/" ++ (arg_0) ++ "_nm.tga")
+
     spec_map_file <- read_tga_specular ("resources/" ++ (arg_0) ++ "_spec.tga")
     diffuse_map_file <- read_tga_color ("resources/" ++ (arg_0) ++ "_diffuse.tga")
     normal_map_file  <- read_tga_normal ("resources/" ++ (arg_0) ++ "_nm.tga")
 
-    let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) faces''
-        model = Model facelist (length faces'') (length verts'') diffuse_map_file normal_map_file spec_map_file
-    -- print $ pixelAt  (specimg $ getSpecularMap model) 5 5 
+    let facelist = load_faces (V.fromList verts) (V.fromList uvs) (V.fromList norms) indexed_faces
+        model = Model facelist (length indexed_faces) (length indexed_verts) diffuse_map_file normal_map_file spec_map_file
+    
     return model
 
 load_faces :: V.Vector (Vec.Vec3 Double) -> V.Vector (Vec.Vec2 Double) -> V.Vector (Vec.Vec3 Double) -> V.Vector ([(Vec.Vec3 Integer, Int)]) -> [Face ]
