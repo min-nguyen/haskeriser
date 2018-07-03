@@ -51,28 +51,28 @@ pardraw rasteriser shader  =  runPar ( do
         chunk_size = floor ((to_double chunk_total)/2.0)
     f1 <-  (spawn (process_triangles rasteriser  shader 0 (chunk_size*1 - 1)))
     f2 <-  (spawn (process_triangles rasteriser  shader (chunk_size*1)(chunk_size - 1)))
-    f3 <-  (spawn (process_triangles rasteriser  shader (chunk_size*2)(chunk_size*3 - 1)))
-    f4 <-  (spawn (process_triangles rasteriser  shader (chunk_size*3)(chunk_total - 1)))
+    -- f3 <-  (spawn (process_triangles rasteriser  shader (chunk_size*2)(chunk_size*3 - 1)))
+    -- f4 <-  (spawn (process_triangles rasteriser  shader (chunk_size*3)(chunk_total - 1)))
     (ras1, shade1) <- Par.get f1
     (ras2, shade2) <- Par.get f2
-    (ras3, shade3) <- Par.get f3
-    (ras4, shade4) <- Par.get f4
+    -- (ras3, shade3) <- Par.get f3
+    -- (ras4, shade4) <- Par.get f4
     -- let strategy = myStrat reduce
     case shader of  (CameraShader {..}) ->           (do 
-                                                    let zbuffer = reduceBuffers (V.toList (getZBuffer ras1)) (V.toList (getZBuffer ras2)) (V.toList (getZBuffer ras3))  (V.toList (getZBuffer ras3)) --(getZBuffer ras3) (getZBuffer ras4)
+                                                    let zbuffer = reduceBuffers (V.toList (getZBuffer ras1)) (V.toList (getZBuffer ras2))  --(getZBuffer ras3) (getZBuffer ras4)
                                                     return (ras2 {getZBuffer = (V.fromList zbuffer)}, shade2))
                     (DirectionalLightShader {..}) -> (do 
-                                                    let dbuffer = reduceBuffers  (V.toList (getDepthBuffer ras1)) (V.toList (getDepthBuffer ras2)) (V.toList (getDepthBuffer ras3)) (V.toList (getDepthBuffer ras4))
+                                                    let dbuffer = reduceBuffers  (V.toList (getDepthBuffer ras1)) (V.toList (getDepthBuffer ras2)) 
                                                     return (ras2 {getDepthBuffer = (V.fromList dbuffer)}, shade2) )                        
     )
 
-reduceBuffers :: [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ]
-reduceBuffers [x] [t] [s] [p] = [par2_reduce x t s p]
-reduceBuffers xs ts ss ps = 
+reduceBuffers :: [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ]
+reduceBuffers [x] [t] = [par2_reduce x t]
+reduceBuffers xs ts  = 
     let len = length xs
-        ((xs1, xs2), (ts1, ts2), (ss1, ss2) , (ps1, ps2) ) = mapTuple4 (splitAt (len `div` 2)) (xs,ts,ss,ps)
+        ((xs1, xs2), (ts1, ts2)) = mapTuple2 (splitAt (len `div` 2)) (xs,ts)
 
-    in (par2 reduceBuffers xs1 ts1 ss1 ps1) ++ (par2 reduceBuffers xs2 ts2 ss2 ps2)
+    in (par2 reduceBuffers xs1 ts1 ) ++ (par2 reduceBuffers xs2 ts2)
 
 
 draw_loop :: Rasteriser -> Shader  -> IO (Rasteriser, Shader)

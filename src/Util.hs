@@ -30,6 +30,7 @@ import Codec.Picture.Types
 import Debug.Trace as Trace
 import Foreign.C.Types
 import Control.Parallel
+
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                          Miscellaneous                         | | ---
       --- ‾------------------------------------------------------------------‾---
@@ -47,21 +48,24 @@ debug x f =   Trace.trace (show x) f
     ---- |‾| -------------------------------------------------------------- |‾| ----
      --- | |                      List/Vector Helpers                       | | ---
       --- ‾------------------------------------------------------------------‾---
-par4_reduce :: Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8) -> Vector.Vector (Double, Vec.Vec4 Word8)
-par4_reduce as bs cs ds = Vector.zipWith4 (\a b c d -> foldr (\(depth1, color1)(depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) d [a, b, c] ) as bs cs ds
+par2_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) 
+par2_reduce as bs  = (\a b  -> (\(depth1, color1) (depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) a b ) as bs
 
-par2_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) 
-par2_reduce as bs cs ds = (\(depth1, color1) (depth2, color2)  (depth3, color3)  (depth4, color4) -> 
+par2 :: (a -> b -> c) -> (a -> b -> c)
+par2 f x y = x `par` y `par` f x y
+
+
+par4_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) 
+par4_reduce as bs cs ds = (\(depth1, color1) (depth2, color2)  (depth3, color3)  (depth4, color4) -> 
                                                 (let max_depth = List.maximum [depth1, depth2, depth3, depth4]
                                                  in case () of  
                                                                       _ | max_depth == depth1 -> (depth1, color1) 
                                                                         | max_depth == depth2 -> (depth2, color2)
                                                                         | max_depth == depth3 -> (depth3, color3)
-                                                                        | max_depth == depth4 -> (depth4, color4))) as bs cs ds
+                                                                        | max_depth == depth4 -> (depth4, color4))) as bs cs ds                                                       
+par4 :: (a -> b -> c -> d -> e) -> (a -> b -> c -> d -> e)
+par4 f  = \ x y s t -> x `par` y `par` s `par` t  `par` f x y s t
 
-                                                                        
-par2 :: (a -> b -> c -> d -> e) -> (a -> b -> c -> d -> e)
-par2 f  = \ x y s t -> x `par` y `par` s `par` t  `par` f x y s t
 
 reduce_zbuffer :: [Vector.Vector (Double, Vec.Vec4 Word8)] ->  (Vector.Vector (Double, Vec4 Word8))
 reduce_zbuffer zbuffers =  foldr (\veca vecb -> Vector.map (\((zindex1, rgba1),(zindex2, rgba2)) -> if zindex1 > zindex2 then (zindex1, rgba1) else (zindex2, rgba2)) (Vector.zip veca vecb) ) Vector.empty zbuffers
