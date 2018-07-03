@@ -12,7 +12,7 @@
 module Main 
     where
 
-import Prelude hiding (any, mapM_)
+import Prelude as Prelude hiding (any, mapM_)
 import Control.Monad hiding (mapM_)
 import Data.Foldable hiding (elem)
 import Data.Maybe
@@ -36,11 +36,15 @@ import Types
 import Text.Printf
 import Control.Exception
 import System.CPUTime
+import Text.Printf
+import Formatting as Formatting
+import System.Clock
+import Util
 
 loop :: (Rasteriser -> Shader -> IO((Rasteriser, Shader))) -> Model -> Light -> Camera -> Shader -> Shader -> Shader -> IO()
 loop draw_func model light camera camera_shader directional_shader ambient_shader = do
         screen <- sdl_init
-        start <- getCPUTime
+
         let ras = (load_rasteriser model screen camera light) :: Rasteriser
             loop' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents
@@ -49,23 +53,24 @@ loop draw_func model light camera camera_shader directional_shader ambient_shade
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
                         -- (ras'  , ambient_shader')    <- draw_func ras ambient_shader (Vec.identity :: Mat44 Double)
-                      
+                        start <- getTime Realtime
                         initial_dir_shader <- setup_shader ras directional_shader (Vec.identity :: Mat44 Double)
 
                         camera_shaderx      <- setup_shader ras camera_shader (getMVP initial_dir_shader)
                         let directional_shaderx = initial_dir_shader {getTransformM = getMVP camera_shaderx}
 
-                        -- (ras'  , directional_shader')  <- draw_func ras  directional_shaderx 
-                     
-                        (ras'' , camera_shader') <- draw_func ras camera_shaderx 
+                        (ras'  , directional_shader')  <- draw_func ras  directional_shaderx 
+
+                        (ras'' , camera_shader') <- draw_func ras' camera_shaderx 
                
                         sequence [render_screen ras'' camera_shader' camera_shaderx px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
-              
+                        end   <- (getTime Realtime)
+
+                        print $ "Run time in seconds: " ++ show (((to_double $ fromIntegral $ nsec end) * 0.00000001) - ((to_double $ fromIntegral $ nsec start) * 0.00000001))
+
                         SDL.present (renderer screen) 
         loop'
-        end   <- getCPUTime
-        let diff = (fromIntegral (end - start)) / (10^12)
-        printf "Computation time: %0.3f sec\n" (diff :: Double)
+        
         ----- One loop freeze ----
         let loop'' = do
                         events <- map SDL.eventPayload <$> SDL.pollEvents

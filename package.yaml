@@ -44,6 +44,8 @@ dependencies:
 - monad-par
 - monad-control
 - deepseq
+- clock
+- formatting
 
 library:
   source-dirs: src
