@@ -45,6 +45,12 @@ import Model
 import Types
 import Control.Parallel.Strategies
 
+
+
+draw_loop :: Rasteriser -> Shader  -> IO (Rasteriser, Shader)
+draw_loop rasteriser shader  = do
+    return $ pardraw rasteriser  shader
+
 pardraw :: Rasteriser -> Shader ->  (Rasteriser, Shader)
 pardraw rasteriser shader  =  runPar ( do
     let chunk_total = getNumFaces $ getModel rasteriser
@@ -57,12 +63,12 @@ pardraw rasteriser shader  =  runPar ( do
     (ras2, shade2) <- Par.get f2
     -- (ras3, shade3) <- Par.get f3
     -- (ras4, shade4) <- Par.get f4
-    case shader of  (CameraShader {..}) ->           (do 
+    case shader of  (CameraShader {..}) ->           do 
                                                     let zbuffer = reduceBuffers (V.toList (getZBuffer ras1)) (V.toList (getZBuffer ras2))  --(getZBuffer ras3) (getZBuffer ras4)
-                                                    return (ras2 {getZBuffer = (V.fromList zbuffer)}, shade2))
-                    (DirectionalLightShader {..}) -> (do 
+                                                    return (ras2 {getZBuffer = (V.fromList zbuffer)}, shade2)
+                    (DirectionalLightShader {..}) -> do 
                                                     let dbuffer = reduceBuffers  (V.toList (getDepthBuffer ras1)) (V.toList (getDepthBuffer ras2)) 
-                                                    return (ras2 {getDepthBuffer = (V.fromList dbuffer)}, shade2) )                        
+                                                    return (ras2 {getDepthBuffer = (V.fromList dbuffer)}, shade2)                      
     )
 
 reduceBuffers :: [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ] -> [(Double, Vec.Vec4 Word8) ]
@@ -70,19 +76,8 @@ reduceBuffers [x] [t] = [par2_reduce x t]
 reduceBuffers xs ts  = 
     let len = length xs
         ((xs1, xs2), (ts1, ts2)) = mapTuple2 (splitAt (len `div` 2)) (xs,ts)
-
     in (par2 reduceBuffers xs1 ts1 ) ++ (par2 reduceBuffers xs2 ts2)
 
-
-draw_loop :: Rasteriser -> Shader  -> IO (Rasteriser, Shader)
-draw_loop rasteriser shader  = do
-    let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
-   
-         ----------- SET UP MVP MATRICES IN SHADER -----------
-
-    let (ras', shade') = pardraw rasteriser  shader
-
-    return (ras', shade')
 
 process_triangles :: Rasteriser -> Shader -> Int -> Int -> Par (Rasteriser, Shader)
 process_triangles rasteriser shader start_index chunksize =  foldM f (rasteriser, shader) (take chunksize (drop start_index $ getFace (getModel rasteriser)))

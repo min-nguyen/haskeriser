@@ -33,22 +33,28 @@ import Types
 import Control.Monad.Par as Par
 
 load_zbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
-load_zbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 0 0 0 0))) 
+load_zbuffer screen = V.fromList $ replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 0 0 0 0)
 
 load_shadowbuffer :: Screen -> V.Vector (Double, Vec4 Word8)
-load_shadowbuffer screen = (V.fromList (replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 255 255 255 255))) 
+load_shadowbuffer screen = V.fromList $ replicate ((width_i screen)*(height_i screen)) (0.0, toVec4 255 255 255 255)
 
 load_rasteriser :: Model -> Screen -> Camera -> Light -> Rasteriser
 load_rasteriser  model screen camera light = Rasteriser zbuffer depthbuffer ambientbuffer model screen camera light 
-                                        where zbuffer = load_zbuffer screen
-                                              depthbuffer = load_shadowbuffer screen
+                                        where zbuffer       = load_zbuffer screen
+                                              depthbuffer   = load_shadowbuffer screen
                                               ambientbuffer = load_shadowbuffer screen
+
+getBuffer :: Rasteriser -> Shader -> Buffer
+getBuffer ras shader = case shader of   
+                                (CameraShader {..})             ->  getZBuffer ras
+                                (AmbientLightShader {..})       -> getAmbientBuffer ras
+                                (DirectionalLightShader  {..})  -> getDepthBuffer ras      
 
 process_triangle :: Rasteriser -> Shader -> Face  -> Par (Rasteriser, Shader)
 process_triangle ras shader face  = do
                         let
                             ----------- VERTEX SHADER -----------
-                            Face (vertices) (uvs) (vertnorms) = face
+                            Face vertices uvs vertnorms = face
 
                             (screenVertices, shader') =  vertex_shade shader (ras) face 
 
@@ -69,59 +75,45 @@ process_triangle ras shader face  = do
                             --------------------------------------
                             
 
-                        (updated_rasteriser, updated_shader) <- (draw_triangle ras shader' screenVertices   (floor $ fst bboxmin, floor $ fst bboxmax)   
-                                                                                                                        (floor $ snd bboxmin, floor $ snd bboxmax) 
-                                                                                                                        (floor $ fst bboxmin) 
-                                                                                                                        (floor $ snd bboxmin) )
-                        return $ (updated_rasteriser, updated_shader)
+                        (updated_rasteriser, updated_shader) <-  draw_triangle ras shader' screenVertices   (floor $ fst bboxmin, floor $ fst bboxmax)   
+                                                                                                            (floor $ snd bboxmin, floor $ snd bboxmax) 
+                                                                                                            (floor $ fst bboxmin) 
+                                                                                                            (floor $ snd bboxmin) 
+                        return (updated_rasteriser, updated_shader)
 
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
 draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  Par (Rasteriser, Shader)
-draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py
-    | (py > bbox_max_y)                      = (return ((ras, shader)))
-    | (px > bbox_max_x)                      = draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) bbox_min_x (py + 1)
-    | otherwise = do 
-                let
-                    -- Screen Coordinates
-                    (vertex_0, vertex_1, vertex_2) = fromVec3 screen_vertices
-                    ((x0,y0,z0,w0),(x1,y1,z1,w1),(x2,y2,z2,w2)) = mapTuple3 fromVec4 (vertex_0, vertex_1, vertex_2)
-                
-                    -- Coordinate Attributes
-                    barycentric_inputs = (projectVec4to2D vertex_0 , projectVec4to2D vertex_1 , projectVec4to2D vertex_2) 
-                    pixel = (toVec2 (to_double px) (to_double py) )
+draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py =
+    let recurse =  draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) 
+    in case () of 
+      _ | (py > bbox_max_y)                      -> return (ras, shader)
+        | (px > bbox_max_x)                      -> recurse bbox_min_x (py + 1)
+        | otherwise -> do 
+                let barycentric_inputs = fromVec3 $ Vec.map projectVec4to2D screen_vertices
+                    ---
                     maybeBary = barycentric barycentric_inputs (toVec2 (to_double px) (to_double py) )
 
-
-                case maybeBary of   Nothing   -> ((draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
-                                    Just bary -> (    do
-                                                    let (_, _, frag_depth) = (fromVec3 $ multmv (getCurrentTri shader) bary) :: (Double, Double, Double)
-                                                        pixelIndex = (px + py * screenWidth_i)
-                                                    
-                                                        getBuffer = case shader of  (CameraShader {..}) -> (\ras -> getZBuffer ras)
-                                                                                    (AmbientLightShader {..}) -> (\ras -> getAmbientBuffer ras)
-                                                                                    (DirectionalLightShader  {..}) -> (\ras -> getDepthBuffer ras)
-
-                                                    if ( (fst ((getBuffer ras) V.! pixelIndex )) > frag_depth )
-                                                    then  (  (draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px + 1) py))
-                                                    else ( do
-                                            
-                                                        (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
-
-                                                
-                                                        draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py)) 
+                case maybeBary of   Nothing   -> recurse (px + 1) py
+                                    Just bary -> do
+                                                let frag_depth = (Vec.getElem 2 $ multmv (getCurrentTri shader) bary) :: Double
+                                                    pixelIndex = px + py * screenWidth_i
+                                                if     fst (getBuffer ras shader V.! pixelIndex ) > frag_depth 
+                                                then   recurse (px + 1) py
+                                                else   do
+                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
+                                                    draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py
                                             
                                                           
       
 
 render_screen :: Rasteriser -> Shader -> Shader -> Int -> Int -> IO ()
 render_screen ras depthshader camerashader px py = do
-            
                 let screen = getScreen ras
-                    index = px + py * (width_i (getScreen ras))
-                    pixel = (V2  (screenWidth -  fromIntegral px) (screenHeight - fromIntegral py) )
-                    camrgba = snd $ (getZBuffer ras) V.! index 
-                    depthrgba = snd $ (getDepthBuffer ras) V.! index
+                    index = px + py * screenWidth_i
+                    pixel = V2  (screenWidth -  fromIntegral px) (screenHeight - fromIntegral py)
+                    camrgba = snd $ getZBuffer ras V.! index 
+                    depthrgba = snd $ getDepthBuffer ras V.! index
                 sdl_put_pixel screen pixel $ vec4ToV4 $  camrgba 
                 -- case shader of  (CameraShader {..}) -> let rgba = vec4ToV4 $ snd $ (getZBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
                 --                 (DirectionalLightShader  {..}) -> let rgba = vec4ToV4 $ snd $ (getDepthBuffer ras) V.! index in sdl_put_pixel screen pixel (rgba) 
@@ -134,34 +126,28 @@ render_screen ras depthshader camerashader px py = do
 
 render_ambient :: Int -> Int -> V.Vector (Double, Vec4 Word8) -> Maybe (Vec4 Word8)
 render_ambient x y zbuffer = 
-                     if (fst (zbuffer V.! (x + y * screenWidth_i))) > (0.0)
-                     then ( let total = foldr (\tote a -> tote + ( (m_PI/2) - (max_elevation_angle zbuffer (Vec.map to_double $ toVec2 x y) (toVec2 (cos a) (sin a)) ) ) ) 0 [0, (m_PI/4) .. m_PI * 2 ]  
-                                total' = total/(m_PI*4)
-                                total'' = debug total' ((**) total' 100)
-                            in Just $ mult_rgba_d (toVec4 255 255 255 255) total'')     
-                     else Nothing        
+                     if     fst (zbuffer V.! (x + y * screenWidth_i)) > 0.0
+                     then   let total   = foldr (\tote a -> tote + (m_PI/2) - max_elevation_angle zbuffer (Vec.map to_double $ toVec2 x y) (toVec2 (cos a) (sin a))   ) 0 [0, (m_PI/4) .. m_PI * 2 ]  
+                                total'  = total/(m_PI*4)
+                                total'' = (**) total' 100
+                            in Just $ mult_rgba_d (toVec4 255 255 255 255) total''     
+                     else   Nothing        
                                         
 max_elevation_angle :: V.Vector (Double, Vec4 Word8) -> Vec2 Double -> Vec2 Double -> Double
 max_elevation_angle zbuff p dir = 
     let (px, py) = fromVec2 p
-        foo t maxangle = (  if t > 100 
+        foo t maxangle =    if t > 100 
                             then maxangle
-                            else ( let (curx, cury) = fromVec2 $ p + t * dir
-                                    in  if (curx >= screenWidth_d || cury >= screenHeight_d || curx < 0 || cury < 0) 
-                                        then maxangle
-                                        else (
-                                            let distance = (Vec.norm (p - toVec2 curx cury)) :: Double
-                                            in (if distance >= 1.0 
-                                                then foo  (t+1) maxangle
-                                                else (
-                                                    let elevation = fst (zbuff V.! (floor curx + (floor cury) * screenWidth_i)) - fst (zbuff V.! (floor px + (floor py) * screenWidth_i))
-                                                        maxangle' = max maxangle (atan (elevation/distance))
-                                                    in foo (t+1) maxangle'
-                                                )
-                                            )
-                                        )
-                                    ))
-
+                            else let (curx, cury) = fromVec2 $ p + t * dir
+                                 in  if (curx >= screenWidth_d || cury >= screenHeight_d || curx < 0 || cury < 0) 
+                                     then maxangle
+                                     else let distance = (Vec.norm (p - toVec2 curx cury)) :: Double
+                                          in if distance >= 1.0 
+                                             then foo  (t+1) maxangle
+                                             else 
+                                                let elevation = fst (zbuff V.! (floor curx + (floor cury) * screenWidth_i)) - fst (zbuff V.! (floor px + (floor py) * screenWidth_i))
+                                                    maxangle' = max maxangle (atan (elevation/distance))
+                                                in foo (t+1) maxangle'
     in foo 0 0
 
 

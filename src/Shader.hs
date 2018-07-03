@@ -34,42 +34,42 @@ import System.CPUTime
 vertex_shade :: Shader -> Rasteriser -> Face  -> (Mat34 Double, Shader)
 vertex_shade (DirectionalLightShader modelview viewport projection mvp_mat transformM varying_tri) ras face = 
     let 
-        Face (vertices) (uvs) (vertnorms) = face
+        Face vertices uvs vertnorms = face
         model = getModel ras
         -- (cam_x, cam_y, cam_z) = position $ getCamera ras
-        screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) )  
+        screen_vert = multmm (Vec.map cartesianToHomogeneous vertices) (Vec.transpose mvp_mat )
 
-        new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
+        new_varying_tri = Vec.transpose $ Vec.map homogeneousToCartesian screen_vert
         
         -- translated_v = screen_vert - (toVec3 (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1))
         -- rotated_x = (x - screenWidth_d/ 2) / rCONSTDepth * (z - cam_z) + cam_x
         -- rotated_y =  (y - screenHeight_d/ 2) / rCONSTDepth * (z - cam_z) + cam_y
         -- rotated_z = z
-    in ((screen_vert, (DirectionalLightShader modelview viewport projection mvp_mat transformM new_varying_tri) ))
+    in (screen_vert, DirectionalLightShader modelview viewport projection mvp_mat transformM new_varying_tri)
     
 vertex_shade (AmbientLightShader modelview viewport projection mvp_mat varying_tri ) ras face = 
     let 
-        Face (vertices) (uvs) (vertnorms) = face
+        Face vertices uvs vertnorms = face
         model = getModel ras
    
-        screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) ) 
+        screen_vert = multmm (Vec.map cartesianToHomogeneous vertices) (Vec.transpose mvp_mat )
 
         new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
 
-    in ((screen_vert, (AmbientLightShader modelview viewport projection mvp_mat new_varying_tri ) ))
+    in (screen_vert, AmbientLightShader modelview viewport projection mvp_mat new_varying_tri ) 
 
 vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow vary_uv vary_tri) 
     ras face = 
         let model = getModel ras
-            Face (vertices) (uvs) (vertnorms) = face
+            Face vertices uvs vertnorms = face
             
-            new_vary_uv  =  (uvs :: Mat23 Double) 
+            new_vary_uv  =  uvs :: Mat23 Double
 
-            screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) )
+            screen_vert = multmm (Vec.map cartesianToHomogeneous vertices) (Vec.transpose mvp_mat )
             new_vary_tri = Vec.transpose $  (Vec.map homogeneousToCartesian) screen_vert
 
 
-        in ((screen_vert, (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) ))
+        in (screen_vert, CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow new_vary_uv new_vary_tri) 
 
 
 
@@ -77,7 +77,7 @@ fragment_shade :: Shader -> Rasteriser -> Vec3 Double -> Int -> Par (Rasteriser,
 fragment_shade shader ras bary_coords index = case shader of
 
     (DirectionalLightShader { getCurrentTri = current_tri, getTransformM = transM , ..}) -> 
-       (do
+        do
             let 
                 (px, py, pz) = (fromVec3 $ multmv current_tri bary_coords)  :: (Double, Double, Double)
             
@@ -85,44 +85,45 @@ fragment_shade shader ras bary_coords index = case shader of
                 updatedbuffer = replaceAt  (pz, color) index (getDepthBuffer ras)
                 updatedras = ras {getDepthBuffer = updatedbuffer}
 
-                -- (cx, cy, cz) = fromVec3 $ homogeneousToCartesian (multmv getTransformM (cartesianToHomogeneous (multmv vary_tri bary_coords)))
 
-            return $ (updatedras , shader) )
+            return (updatedras , shader) 
+
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
-       (do  
-            let (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous (multmv vary_tri bary_coords)))
-                shadow_idx                      = ((floor sb_px) + (floor sb_py) * screenWidth_i)
+       do  
+            let (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous $ multmv vary_tri bary_coords))
+                shadow_idx                      = (floor sb_px) + (floor sb_py) * screenWidth_i
             if shadow_idx > (screenWidth_i * screenHeight_i) 
-                then return (ras, shader) 
-                else   (do 
-                    let currentBufferValue              = (fst((getDepthBuffer ras) V.! shadow_idx))
+            then return (ras, shader) 
+            else do 
+                let currentBufferValue              = fst (getDepthBuffer ras V.! shadow_idx)
+                
+                    inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * (intensity $ getLight ras)
+
+                    uv          = multmv (vary_uv :: Mat23 Double) (bary_coords :: Vec3 Double) 
+
+                    norm        = Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv))  :: Vec3 Double ----
+                    light       = Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras)))   :: Vec3 Double
+                    spec        = (max ((dot norm light) * 4.0) (0.0)) * (Vec.norm $ model_specular (getModel ras) uv) * 2.0 * (intensity $ getLight ras)
                     
-                        inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * (intensity $ getLight ras)
+                    diffuse     = model_diffuse (getModel ras) uv :: Vec4 Word8
 
-                        uv          = (multmv ((vary_uv :: Mat23 Double)) (bary_coords :: Vec3 Double)) :: Vec2 Double
+                    color       = add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 3.0 ) ) (5)
+                    pz          = Vec.getElem 2 $ multmv vary_tri bary_coords
+                    updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
+                    updatedras = ras {getZBuffer = updatedbuffer}
 
-                        norm        = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
-                        light       = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
-                        spec        = (max ((dot norm light) * 4.0) (0.0)) * ((Vec.norm (model_specular (getModel ras) uv)) * 2.0 * (intensity $ getLight ras))
-                        
-                        diffuse     = ((model_diffuse (getModel ras) uv) :: Vec4 Word8)
-
-                        color       = (add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 3.0 ) ) (5))
-                        pz          = (Vec.getElem 2 $ multmv vary_tri bary_coords) :: Double
-                        updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
-                        updatedras = ras {getZBuffer = updatedbuffer}
-
-                    return $ (updatedras , shader) ) )            
+                return  (updatedras , shader)           
+                
     (AmbientLightShader { getCurrentTri = current_tri, ..}) -> 
-       (do
+        do
             let 
-                (px, py, pz)                    = (fromVec3 $ multmv current_tri bary_coords) :: (Double, Double, Double)
+                (px, py, pz)                    = fromVec3 $ multmv current_tri bary_coords 
                 color = mult_rgba_d (toVec4 255 255 255 255)  pz
                 
                 updatedbuffer = replaceAt  (pz, color) index (getAmbientBuffer ras)
                 updatedras = ras {getAmbientBuffer = updatedbuffer}
      
-            return $ (updatedras , shader) )
+            return (updatedras , shader) 
 
 load_directionalshader :: Shader
 load_directionalshader =  DirectionalLightShader    {   getModelView       = Vec.identity :: Mat44 Double,
@@ -154,8 +155,8 @@ load_camerashader =  CameraShader {     getModelView       = Vec.identity :: Mat
 
 setup_shader :: Rasteriser -> Shader -> Mat44 Double -> IO Shader
 setup_shader rasteriser shader transMVP = case shader of
-    DirectionalLightShader _ _ _ _ _ _ -> (do
-        let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
+    DirectionalLightShader _ _ _ _ _ _ -> do
+        let (Rasteriser _ _ _ _ screen camera light) = rasteriser
 
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
@@ -168,22 +169,22 @@ setup_shader rasteriser shader transMVP = case shader of
             inv_MVP = invert (transMVP)
             transformM = case inv_MVP of Just invMVP     -> ((multmm (getMVP shader') invMVP) :: Mat44 Double)
                                          Nothing         -> (Vec.identity :: Mat44 Double)
-        return $ shader' {getTransformM = transformM} )
+        return $ shader' {getTransformM = transformM} 
 
-    AmbientLightShader _ _ _ _ _  -> (do
-        let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
+    AmbientLightShader _ _ _ _ _  -> do
+        let (Rasteriser _ _ _ model screen camera light) = rasteriser
        
        
         let screen_width    = to_double $ width_i screen
             cam_pos         = position camera
             screen_height   = to_double $ height_i screen
             light_dir       = direction light
-            depth_coeff     = ((-1.0)/(Vec.norm( eye- cam_pos)))
-        return $ mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0)(screen_width * (3.0/4)) (screen_height *(3.0/4))  eye cam_pos up 0.0)
+            depth_coeff     = (-1.0)/(Vec.norm( eye- cam_pos))
+        return $ mvp_shader shader depth_coeff (screen_width/8.0) (screen_height/8.0)(screen_width * (3.0/4)) (screen_height *(3.0/4))  eye cam_pos up 0.0
         
         
-    CameraShader _ _ _ _ _ _ _ _ _ -> (do
-        let (Rasteriser zbuffer shadowbuffer ambientbuffer model screen camera light) = rasteriser
+    CameraShader _ _ _ _ _ _ _ _ _ -> do
+        let (Rasteriser _ _ _ _ screen camera light) = rasteriser
 
             screen_width    = to_double $ width_i screen
             screen_height   = to_double $ height_i screen
@@ -193,12 +194,12 @@ setup_shader rasteriser shader transMVP = case shader of
 
         let cam_dir         = rotation camera
             cam_rotation    = (Vec.identity :: Mat44 Double) --rotation camera
-            depth_coeff     = if Vec.norm(cam_pos - center) <= (-1.0) then (-1.0) else ((-1.0)/(Vec.norm( (cam_pos) - center)))
+            depth_coeff     = if Vec.norm(cam_pos - center) <= (-1.0) then (-1.0) else (-1.0)/(Vec.norm(cam_pos - center))
 
             ----------- SET UP MVP MATRICES IN SHADER -----------
             shade' = mvp_shader shader (depth_coeff) (0) (0) (screen_width) (screen_height ) cam_pos cam_dir up cam_rotation
 
-            uniform_M = (getModelView shade')
+            uniform_M = getModelView shade'
             
             inv_MV = invert (multmm (getProjection shade') uniform_M)
             uniform_MIT = case inv_MV of Just invProjMod -> (transpose invProjMod :: Mat44 Double)
@@ -208,4 +209,4 @@ setup_shader rasteriser shader transMVP = case shader of
             uniform_MShadow = case inv_MVP of Just invMVP     -> ((multmm transMVP invMVP) :: Mat44 Double)
                                               Nothing         -> (Vec.identity :: Mat44 Double)
 
-        return shade' {getUniformM = uniform_M, getUniformMIT = uniform_MIT, getUniformMShadow = uniform_MShadow})
+        return shade' {getUniformM = uniform_M, getUniformMIT = uniform_MIT, getUniformMShadow = uniform_MShadow}
