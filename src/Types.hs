@@ -148,9 +148,9 @@ data ColorMap = ColorMap  {
 data NormalMap = NormalMap {
                                 normwidth   :: {-# UNPACK #-} !Int,
                                 normheight  :: {-# UNPACK #-} !Int,
-                                normdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent PixelRGBA8)) ,
+                                normdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent PixelRGB8)) ,
                                 normbbp     :: Int,
-                                normimg     :: Image PixelRGBA8
+                                normimg     :: Image PixelRGB8
                             }
                  | NormalMapError
 
@@ -158,9 +158,9 @@ data NormalMap = NormalMap {
 data SpecularMap = SpecularMap {
                                 specwidth   :: {-# UNPACK #-} !Int,
                                 specheight  :: {-# UNPACK #-} !Int,
-                                specdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent Pixel8)) ,
+                                specdata    :: {-# UNPACK #-} !(ST.Vector (PixelBaseComponent PixelRGB8)) ,
                                 specbbp     :: Int,
-                                specimg     :: Image Pixel8
+                                specimg     :: Image PixelRGB8
                             }
                  | SpecularMapError
 

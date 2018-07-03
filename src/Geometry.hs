@@ -44,10 +44,10 @@ projection_matrix coeff = Vec.set n3 (toVec4 0.0 0.0 coeff 1.0) identity
                    
 
 viewport_matrix :: Double -> Double -> Double -> Double -> Mat44 Double
-viewport_matrix x y w h =             matFromLists [[w/2.0,   0,         0,                 x+w/2.0],
-                                                    [0,       h/2.0,     0,                 y+h/2.0],
-                                                    [0,       0,         rCONST_depth/2.0,  rCONST_depth/2.0],
-                                                    [0,       0,         0,                 1.0]]
+viewport_matrix x y w h =    matFromLists [[w/2.0,   0,         0,                 x+w/2.0],
+                                                            [0,       h/2.0,     0,                 y+h/2.0],
+                                                            [0,       0,         rCONST_depth/2.0,  rCONST_depth/2.0],
+                                                            [0,       0,         0,                 1.0]]
 
 
 --                 EYE          CENTER        UP                                     

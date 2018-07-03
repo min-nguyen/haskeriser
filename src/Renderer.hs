@@ -57,7 +57,6 @@ pardraw rasteriser shader  =  runPar ( do
     (ras2, shade2) <- Par.get f2
     -- (ras3, shade3) <- Par.get f3
     -- (ras4, shade4) <- Par.get f4
-    -- let strategy = myStrat reduce
     case shader of  (CameraShader {..}) ->           (do 
                                                     let zbuffer = reduceBuffers (V.toList (getZBuffer ras1)) (V.toList (getZBuffer ras2))  --(getZBuffer ras3) (getZBuffer ras4)
                                                     return (ras2 {getZBuffer = (V.fromList zbuffer)}, shade2))
@@ -88,33 +87,3 @@ draw_loop rasteriser shader  = do
 process_triangles :: Rasteriser -> Shader -> Int -> Int -> Par (Rasteriser, Shader)
 process_triangles rasteriser shader start_index chunksize =  foldM f (rasteriser, shader) (take chunksize (drop start_index $ getFace (getModel rasteriser)))
     where f = \(ras', shader') face -> (process_triangle ras' shader' face)
-
-
--- parallel :: V.Vector (Double, Vec4 Word8) ->  [[((Vec3 Double, Vec3 Double, Vec3 Double), (Vec3 Double, Vec3 Double, Vec3 Double))]] -> Light -> Model -> Screen ->  V.Vector (Double, Vec4 Word8)
--- parallel  zbuffer screen_world_coords light model screen  = 
---     runPar $ do
---         [a,b,c,d] <- sequence [new, new, new, new]
---         fork $  put a (process_triangles (0::Int) zbuffer (screen_world_coords !! 0) light model screen)
---         fork $  put b (process_triangles (0::Int) zbuffer (screen_world_coords !! 1) light model screen)
---         fork $  put c (process_triangles (0::Int) zbuffer (screen_world_coords !! 2) light model screen)
---         fork $  put d (process_triangles (0::Int) zbuffer (screen_world_coords !! 3) light model screen)
---         zba <- get a
---         zbb <- get b
---         zbc <- get c
---         zbd <- get d
---         return $ reduce_zbuffer [zba, zbb, zbc, zbd]
-
--- runPars :: Int
--- runPars =  runPar $ do
---                 [a,b,c,d] <- sequence [new,new,new,new]
---                 fork $ do x <- get a; put b (x+1)
---                 fork $ do x <- get a; put c (x+2)
---                 fork $ do x <- get b; y <- get c; put d (x+y)
---                 fork $ do put a (3 :: Int)
---                 get d
-
-
--- pts = Matrix.transpose $ viewport_mat shader * clipc
--- pts2 = (scaleMatrix (1/(Matrix.getElem 3 0 pts)) (colVector (getCol 0 pts)) ) <|> 
---         (scaleMatrix (1/(Matrix.getElem 3 1 pts)) (colVector (getCol 1 pts)) ) <|>  
---             (scaleMatrix (1/(Matrix.getElem 3 2 pts)) (colVector (getCol 2 pts)) )

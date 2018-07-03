@@ -29,4 +29,5 @@ import Util
 
 load_camera :: IO Camera
 load_camera = do
-    return $ Camera (toVec3  (100.0) (-7.0)(1.0))
+    return $ Camera (toVec3  (1.0) (-1.0) (2.0))
+                        -- order == y z x ??

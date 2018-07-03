@@ -37,7 +37,7 @@ vertex_shade (DirectionalLightShader modelview viewport projection mvp_mat trans
         Face (vertices) (uvs) (vertnorms) = face
         model = getModel ras
    
-        screen_vert = (Vec.transpose) $ (multmm :: Mat44 Double -> Mat43 Double -> Mat43 Double) (mvp_mat :: Mat44 Double) (((Vec.transpose :: Mat34 Double -> Mat43 Double) $ Vec.map cartesianToHomogeneous vertices) :: Mat43 Double)   
+        screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) )  
 
         new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
 
@@ -48,7 +48,7 @@ vertex_shade (AmbientLightShader modelview viewport projection mvp_mat varying_t
         Face (vertices) (uvs) (vertnorms) = face
         model = getModel ras
    
-        screen_vert = (Vec.transpose) $ (multmm :: Mat44 Double -> Mat43 Double -> Mat43 Double) ((multmm projection modelview) :: Mat44 Double) (((Vec.transpose :: Mat34 Double -> Mat43 Double) $ Vec.map cartesianToHomogeneous vertices) :: Mat43 Double)   
+        screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) ) 
 
         new_varying_tri = Vec.transpose $ (Vec.map homogeneousToCartesian) screen_vert
 
@@ -61,7 +61,7 @@ vertex_shade (CameraShader mview vport proj mvp_mat uni_M uni_MIT uni_Mshadow va
             
             new_vary_uv  =  (uvs :: Mat23 Double) 
 
-            screen_vert = (Vec.transpose) $ (multmm :: Mat44 Double -> Mat43 Double -> Mat43 Double) (mvp_mat :: Mat44 Double) (((Vec.transpose :: Mat34 Double -> Mat43 Double) $ Vec.map cartesianToHomogeneous vertices) :: Mat43 Double)  
+            screen_vert = (multmm :: Mat34 Double -> Mat44 Double -> Mat34 Double) ((Vec.map cartesianToHomogeneous vertices) :: Mat34 Double)   (Vec.transpose (mvp_mat :: Mat44 Double) )
             new_vary_tri = Vec.transpose $  (Vec.map homogeneousToCartesian) screen_vert
 
 
@@ -97,12 +97,12 @@ fragment_shade shader ras bary_coords index = case shader of
 
                 norm        = (Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv)))  :: Vec3 Double ----
                 light       = (Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras))) )  :: Vec3 Double
-                spec        =  (**) (max ((dot norm light) * 2.0) (0.0))  ((model_specular (getModel ras) uv)*2.0)
-
+                spec        =  (max ((dot norm light) * 2.0) (0.0)) * (Vec.norm ((model_specular (getModel ras) uv)*2.0))
+                
                 diffuse     = ((model_diffuse (getModel ras) uv) :: Vec4 Word8)
 
                 color       =  (add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 1.2 ) ) (20))
-
+            
             let updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
                 updatedras = ras {getZBuffer = updatedbuffer}
 

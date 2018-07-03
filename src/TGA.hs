@@ -43,15 +43,15 @@ read_tga_color filepath = do
 
 	return $ case contents of 
 					Left s  -> debug  "HELLO" ColorMapError
-					Right d -> (case d of
-						ImageRGB8  p' ->  (ColorMap (imageWidth $   p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent PixelRGB8))  (8) p')
+					Right d -> (case convertRGB8 d of
+						Image w h d ->  (ColorMap w h d (8) (Image w h d ))
 						-- ImageY16 c' -> (do
 						-- 			putStrLn "ye"
 						-- 			return (TGA_NormalMap (imageWidth $   c')  (imageHeight $  c') ((imageData c') :: V.Vector (Word8))  (8) c'))
 						-- ImageRGBA8 p  -> TGA_Header (imageWidth $   p )  (imageHeight $   p ) (imageData p)  (8) 
 						_ -> ( ( ColorMapError)))
 
-read_tga_specular :: String -> IO SpecularMap
+read_tga_specular :: String -> IO (SpecularMap)
 read_tga_specular filepath = do
 	bytestr <- B.readFile filepath
 	
@@ -60,8 +60,9 @@ read_tga_specular filepath = do
 
 	case contents of 
 			Left s  -> return SpecularMapError
-			Right d -> (case d of
-				ImageY8  p' -> return  (SpecularMap (imageWidth $   p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent Pixel8))  (8) p')
+			Right k -> (case convertRGB8 k of
+				
+				Image w h d ->  return (SpecularMap w h d (8) (Image w h d ))
 				-- ImageY16 c' -> (do
 				-- 			putStrLn "ye"
 				-- 			return (TGA_NormalMap (imageWidth $   c')  (imageHeight $  c') ((imageData c') :: V.Vector (Word8))  (8) c'))
@@ -78,8 +79,8 @@ read_tga_normal filepath = do
 
 	return $ case contents of 
 					Left s  -> debug "HELLO" NormalMapError
-					Right d -> (case d of
-						ImageRGBA8  p' ->  (NormalMap (imageWidth $ p')  (imageHeight $   p') ((imageData p') :: V.Vector (PixelBaseComponent PixelRGBA8))  (8) p')
+					Right k -> (case convertRGB8 k of
+						Image w h d ->  (NormalMap w h d (8) (Image w h d ))
 						_ -> ( NormalMapError))				
 
 
