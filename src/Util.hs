@@ -35,8 +35,13 @@ import Control.Parallel
      --- | |                          Miscellaneous                         | | ---
       --- ‾------------------------------------------------------------------‾---
 
-clamp :: Double -> Double -> Double -> Double
-clamp x minval maxval = min (max x minval) maxval
+clamp_min :: Double -> Double -> Double -> Double
+{-# INLINE clamp_min #-}
+clamp_min x y minval = max (min x y) minval
+
+clamp_max :: Double -> Double -> Double -> Double
+{-# INLINE clamp_max #-}
+clamp_max x y maxval = min (max x y) maxval
 
 to_double :: Int -> Double
 {-# INLINE to_double #-}
@@ -53,8 +58,8 @@ par2_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, 
 par2_reduce as bs  = (\a b  -> (\(depth1, color1) (depth2, color2) -> if depth1 > depth2 then (depth1, color1) else (depth2, color2)) a b ) as bs
 
 par2 :: (a -> b -> c) -> (a -> b -> c)
+{-# INLINE par2 #-}
 par2 f x y = x `par` y `par` f x y
-
 
 par4_reduce :: (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) -> (Double, Vec.Vec4 Word8) 
 par4_reduce as bs cs ds = (\(depth1, color1) (depth2, color2)  (depth3, color3)  (depth4, color4) -> 

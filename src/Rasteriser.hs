@@ -56,7 +56,7 @@ process_triangle ras shader face  = do
                             ----------- VERTEX SHADER -----------
                             Face vertices uvs vertnorms = face
 
-                            (screenVertices, shader') =  vertex_shade shader (ras) face 
+                            (screenVertices, shader') =  vertex_shade shader ras face 
 
                             -----------   SET BBOX -----------
 
@@ -64,11 +64,11 @@ process_triangle ras shader face  = do
                             fetchy i = getElem 1 (getElem i screenVertices )
                             fetchw i = getElem 3 (getElem i screenVertices )
 
-                            bboxmin = foldr (\(x, y) (x', y') -> (max (0.0) (min x x'), max (0.0) (min y y')) )  
+                            bboxmin = foldr (\(x, y) (x', y') -> (clamp_min x x' 0.0, clamp_min y y' 0.0) )  
                                             (1000000.0, 1000000.0)
                                             [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i)  ) |  i <- [0,1,2] ]
 
-                            bboxmax = foldr (\(x, y) (x', y') -> ( min (screenWidth_d - 1)  (max x x'), min (screenHeight_d - 1) (max y y')) )  
+                            bboxmax = foldr (\(x, y) (x', y') -> (clamp_max x x' (screenWidth_d - 1), clamp_max y y' (screenHeight_d - 1)) )  
                                             ((-1000000.0), (-1000000.0))   
                                             [ (  (fetchx i)/(fetchw i) ,   (fetchy i)/(fetchw i) ) |  i <- [0,1,2] ]
                         
@@ -96,13 +96,13 @@ draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, b
 
                 case maybeBary of   Nothing   -> recurse (px + 1) py
                                     Just bary -> do
-                                                let frag_depth = (Vec.getElem 2 $ multmv (getCurrentTri shader) bary) :: Double
-                                                    pixelIndex = px + py * screenWidth_i
-                                                if     fst (getBuffer ras shader V.! pixelIndex ) > frag_depth 
-                                                then   recurse (px + 1) py
-                                                else   do
-                                                    (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
-                                                    draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py
+                                                let     frag_depth = (Vec.getElem 2 $ multmv (getCurrentTri shader) bary) :: Double
+                                                        pixelIndex = px + py * screenWidth_i
+                                                if      fst (getBuffer ras shader V.! pixelIndex ) > frag_depth 
+                                                then    recurse (px + 1) py
+                                                else    do
+                                                      (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
+                                                      draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py
                                             
                                                           
       
