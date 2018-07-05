@@ -3,4 +3,4 @@ packages:
 - .
 extra-deps:
 - Vec-1.0.5
-resolver: lts-11.10
+resolver: lts-11.16

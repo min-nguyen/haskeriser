@@ -36,15 +36,11 @@ vertex_shade (DirectionalLightShader modelview viewport projection mvp_mat trans
     let 
         Face vertices uvs vertnorms = face
         model = getModel ras
-        -- (cam_x, cam_y, cam_z) = position $ getCamera ras
+ 
         screen_vert = multmm (Vec.map cartesianToHomogeneous vertices) (Vec.transpose mvp_mat )
 
         new_varying_tri = Vec.transpose $ Vec.map homogeneousToCartesian screen_vert
-        
-        -- translated_v = screen_vert - (toVec3 (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1) (toVec4 cam_x cam_y cam_z 1))
-        -- rotated_x = (x - screenWidth_d/ 2) / rCONSTDepth * (z - cam_z) + cam_x
-        -- rotated_y =  (y - screenHeight_d/ 2) / rCONSTDepth * (z - cam_z) + cam_y
-        -- rotated_z = z
+
     in (screen_vert, DirectionalLightShader modelview viewport projection mvp_mat transformM new_varying_tri)
     
 vertex_shade (AmbientLightShader modelview viewport projection mvp_mat varying_tri ) ras face = 
@@ -81,7 +77,7 @@ fragment_shade shader ras bary_coords index = case shader of
             let 
                 (px, py, pz) = (fromVec3 $ multmv current_tri bary_coords)  :: (Double, Double, Double)
             
-                color = debug pz (mult_rgba_d (toVec4 255 255 255 255)  pz)
+                color = (mult_rgba_d (toVec4 255 255 255 255)  pz)
                 updatedbuffer = replaceAt  (pz, color) index (getDepthBuffer ras)
                 updatedras = ras {getDepthBuffer = updatedbuffer}
 
@@ -90,26 +86,28 @@ fragment_shade shader ras bary_coords index = case shader of
 
     (CameraShader { getCurrentTri = vary_tri, getCurrentUV = vary_uv, getUniformM = uni_M, getUniformMIT = uni_MIT, getUniformMShadow = uni_Mshadow ,.. }) -> 
        do  
-            let (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous $ multmv vary_tri bary_coords))
+            let p                               = multmv vary_tri bary_coords
+                (sb_px, sb_py, sb_pz)           = fromVec3 $ homogeneousToCartesian (multmv uni_Mshadow (cartesianToHomogeneous $ p))
                 shadow_idx                      = (floor sb_px) + (floor sb_py) * screenWidth_i
             if shadow_idx > (screenWidth_i * screenHeight_i) 
             then return (ras, shader) 
             else do 
-                let currentBufferValue              = fst (getDepthBuffer ras V.! shadow_idx)
-                
-                    inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * (intensity $ getLight ras)
+                let Rasteriser {getModel = model, getLight = light, getDepthBuffer = depthBuffer, getZBuffer = zBuffer, ..} = ras
+                    currentBufferValue              = fst (depthBuffer V.! shadow_idx)
+                    light_intensity                 = (intensity light)
+                    inverse_shadow                  = if currentBufferValue > sb_pz then sb_pz else (sb_pz) * light_intensity
 
                     uv          = multmv (vary_uv :: Mat23 Double) (bary_coords :: Vec3 Double) 
 
-                    norm        = Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal (getModel ras) uv))  :: Vec3 Double ----
-                    light       = Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction (getLight ras)))   :: Vec3 Double
-                    spec        = (max ((dot norm light) * 4.0) (0.0)) * (Vec.norm $ model_specular (getModel ras) uv) * 2.0 * (intensity $ getLight ras)
+                    norm        = Vec.normalize $ homogeneousToCartesian $ multmv uni_MIT (cartesianToHomogeneous (model_normal model uv))  :: Vec3 Double ----
+                    light_dir   = Vec.normalize $ homogeneousToCartesian $ multmv uni_M (cartesianToHomogeneous (direction light))   :: Vec3 Double
+                    spec        = (max ((dot norm light_dir) * 4.0) (0.0)) * (Vec.norm $ model_specular model uv) * 2.0 * light_intensity
                     
-                    diffuse     = model_diffuse (getModel ras) uv :: Vec4 Word8
+                    diffuse     = model_diffuse model uv :: Vec4 Word8
 
                     color       = add_rgba_d (mult_rgba_d (diffuse) (inverse_shadow * 1.2  + spec * 3.0 ) ) (5)
-                    pz          = Vec.getElem 2 $ multmv vary_tri bary_coords
-                    updatedbuffer = replaceAt  (pz, color) index (getZBuffer ras)
+                    pz          = Vec.getElem 2 p
+                    updatedbuffer = replaceAt  (pz, color) index zBuffer
                     updatedras = ras {getZBuffer = updatedbuffer}
 
                 return  (updatedras , shader)           

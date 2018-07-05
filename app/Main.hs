@@ -53,7 +53,7 @@ loop draw_func model light camera camera_shader directional_shader ambient_shade
                         SDL.rendererDrawColor (renderer screen) $= V4 maxBound maxBound maxBound maxBound
                         SDL.clear (renderer screen)
                         -- (ras'  , ambient_shader')    <- draw_func ras ambient_shader (Vec.identity :: Mat44 Double)
-                        start <- getTime Realtime
+                        start <- getTime Monotonic
                         initial_dir_shader <- setup_shader ras directional_shader (Vec.identity :: Mat44 Double)
 
                         camera_shaderx      <- setup_shader ras camera_shader (getMVP initial_dir_shader)
@@ -64,9 +64,9 @@ loop draw_func model light camera camera_shader directional_shader ambient_shade
                         (ras'' , camera_shader') <- draw_func ras' camera_shaderx 
                
                         sequence [render_screen ras'' camera_shader' camera_shaderx px py | py <- [0 .. screenHeight_i - 1], px <- [0 .. screenWidth_i - 1]]
-                        end   <- (getTime Realtime)
+                        end   <- (getTime Monotonic)
 
-                        print $ "Run time in seconds: " ++ show (((to_double $ fromIntegral $ nsec end) * 0.00000001) - ((to_double $ fromIntegral $ nsec start) * 0.00000001))
+                        print $ "Run time in seconds: " ++ show ((to_double $ fromIntegral ((toNanoSecs end) - (toNanoSecs start)))/(10^9))
 
                         SDL.present (renderer screen) 
         loop'

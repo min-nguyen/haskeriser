@@ -23,6 +23,7 @@ import Data.Cross
 import Camera
 import Model
 import SDLx
+import Control.Monad (foldM)
 import Light
 import Geometry
 import Util
@@ -74,37 +75,29 @@ process_triangle ras shader face  = do
                         
                             --------------------------------------
                             
-
-                        (updated_rasteriser, updated_shader) <-  draw_triangle ras shader' screenVertices   (floor $ fst bboxmin, floor $ fst bboxmax)   
-                                                                                                            (floor $ snd bboxmin, floor $ snd bboxmax) 
-                                                                                                            (floor $ fst bboxmin) 
-                                                                                                            (floor $ snd bboxmin) 
-                        return (updated_rasteriser, updated_shader)
-
+                            min_x = floor $ fst bboxmin
+                            min_y = floor $ snd bboxmin
+                            max_x = floor $ fst bboxmax
+                            max_y = floor $ snd bboxmax
+                            
+                            draw_tri = \(ras_acc, shader_acc) (px, py) -> draw_triangle ras_acc shader_acc screenVertices (px, py)
+                        
+                        foldM draw_tri  (ras, shader') [ (x, y)  | y <- [min_y .. max_y], x <- [min_x .. max_x]]
 
 -- #             Screen ->  Triangle Vertices   ->  Z-Buffer                     
-draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) -> (Int, Int) -> Int -> Int ->  Par (Rasteriser, Shader)
-draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) px py =
-    let recurse =  draw_triangle ras shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) 
-    in case () of 
-      _ | (py > bbox_max_y)                      -> return (ras, shader)
-        | (px > bbox_max_x)                      -> recurse bbox_min_x (py + 1)
-        | otherwise -> do 
-                let barycentric_inputs = fromVec3 $ Vec.map projectVec4to2D screen_vertices
-                    ---
-                    maybeBary = barycentric barycentric_inputs (toVec2 (to_double px) (to_double py) )
+draw_triangle :: Rasteriser -> Shader -> Vec3 (Vec4 Double) ->  (Int, Int) ->  Par (Rasteriser, Shader)
+draw_triangle ras shader screen_vertices (px, py) = 
+    do
+        let barycentric_inputs = fromVec3 $ Vec.map projectVec4to2D screen_vertices
+            maybeBary = barycentric barycentric_inputs (toVec2 (to_double px) (to_double py))
 
-                case maybeBary of   Nothing   -> recurse (px + 1) py
-                                    Just bary -> do
-                                                let     frag_depth = (Vec.getElem 2 $ multmv (getCurrentTri shader) bary) :: Double
-                                                        pixelIndex = px + py * screenWidth_i
-                                                if      fst (getBuffer ras shader V.! pixelIndex ) > frag_depth 
-                                                then    recurse (px + 1) py
-                                                else    do
-                                                      (updated_ras , updated_shader) <- fragment_shade shader ras bary pixelIndex
-                                                      draw_triangle updated_ras updated_shader screen_vertices (bbox_min_x, bbox_max_x) (bbox_min_y, bbox_max_y) (px+1) py
-                                            
-                                                          
+        case maybeBary of   Nothing   -> return (ras, shader)
+                            Just bary -> do
+                                        let     frag_depth = (Vec.getElem 2 $ multmv (getCurrentTri shader) bary) :: Double
+                                                pixelIndex = px + py * screenWidth_i
+                                        if      fst (getBuffer ras shader V.! pixelIndex ) > frag_depth 
+                                        then    return (ras, shader)
+                                        else    fragment_shade shader ras bary pixelIndex       
       
 
 render_screen :: Rasteriser -> Shader -> Shader -> Int -> Int -> IO ()
